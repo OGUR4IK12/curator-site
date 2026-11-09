@@ -159,3 +159,6 @@ app.post('/admin/status', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log('Сервер запущен на порту ' + PORT));
+
+
+// update
