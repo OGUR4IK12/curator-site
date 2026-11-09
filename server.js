@@ -34,6 +34,7 @@ const css = `
   .badge.rejected { background: #fab1a0; color: #d63031; }
   .btn-ok { background: #00b894; width: auto; padding: 8px 15px; font-size: 14px; margin-right: 5px; }
   .btn-bad { background: #d63031; width: auto; padding: 8px 15px; font-size: 14px; }
+  .error-page { color: #d63031; text-align: center; padding: 20px; background: #ffeaa7; border-radius: 8px; }
 `;
 
 // --- ГЛАВНАЯ СТРАНИЦА ---
@@ -68,17 +69,43 @@ app.get('/', (req, res) => {
   `);
 });
 
+// --- ОБРАБОТКА ЗАЯВКИ ---
 app.post('/apply', async (req, res) => {
   const { name, location, roblox, discord, telegram, role, username, password } = req.body;
-  if (!name || !location || !roblox || !discord || !role || !username || !password) return res.redirect('/?error=1');
+  
+  if (!name || !location || !roblox || !discord || !role || !username || !password) {
+    return res.redirect('/?error=1');
+  }
 
-  const { error } = await supabase.from('applications').insert([{ name, location, roblox_nick: roblox, discord, telegram, role, username, password }]);
-  if (error) return res.send(`<div style="color:red;text-align:center;margin-top:50px;">Ошибка: логин уже занят или проблема с базой. <a href="/">Назад</a></div>`);
+  // Принудительно добавляем статус и дату, чтобы база их не отвергла
+  const insertData = {
+    name, location, roblox_nick: roblox, discord, 
+    telegram: telegram || null, 
+    role, username, password, 
+    status: 'На рассмотрении'
+  };
+
+  const { error } = await supabase.from('applications').insert([insertData]);
+  
+  if (error) {
+    console.error("Ошибка Supabase:", error.message);
+    return res.send(`
+      <!DOCTYPE html><html><head><style>${css}</style></head><body>
+      <div class="container">
+        <div class="error-page">
+          <h2>Ошибка базы данных</h2>
+          <p><b>Текст ошибки:</b> ${error.message}</p>
+          <p><b>Код:</b> ${error.code}</p>
+        </div>
+        <div class="link" style="margin-top:20px;"><a href="/">← Вернуться назад</a></div>
+      </div></body></html>
+    `);
+  }
   
   res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2 class="success">✅ Успешно!</h2><p style="text-align:center">Заявка отправлена. Ожидайте проверки куратором.</p><div class="link"><a href="/status">Проверить статус заявки</a></div></div></body></html>`);
 });
 
-// --- СТРАНИЦА ПРОВЕРКИ СТАТУСА ---
+// --- ПРОВЕРКА СТАТУСА ---
 app.get('/status', (req, res) => {
   res.send(`
     <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус заявки</title><style>${css}</style></head>
@@ -99,7 +126,7 @@ app.post('/status-check', async (req, res) => {
   const { data, error } = await supabase.from('applications').select('*').eq('username', username).eq('password', password).single();
   
   if (error || !data) {
-    return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль, либо заявки не существует.</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   }
 
   let statusText = '⏳ На рассмотрении (ожидайте)';
@@ -125,13 +152,16 @@ app.get('/admin', async (req, res) => {
     return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container" style="max-width:350px; margin-top:100px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   }
 
-  const { data: apps } = await supabase.from('applications').select('*').order('created_at', { ascending: false });
+  const { data: apps, error } = await supabase.from('applications').select('*').order('created_at', { ascending: false });
   
+  if (error) {
+    return res.send(`<h2 style="color:red;text-align:center;">Ошибка загрузки: ${error.message}</h2>`);
+  }
+
   let html = `<!DOCTYPE html><html><head><style>${css} .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; } @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }</style></head><body><div class="container wide-container">
     <h2>База данных заявок</h2>
     <div class="grid">`;
     
-  // ЗАЩИТА ОТ ОШИБКИ NULL
   (apps || []).forEach(app => {
     let badge = 'pending', text = 'На рассмотрении';
     if (app.status === 'Одобрено') { badge = 'approved'; text = 'Одобрено'; }
