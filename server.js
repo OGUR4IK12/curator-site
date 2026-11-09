@@ -9,7 +9,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- КРАСИВЫЕ СТИЛИ (ОБЩИЕ ДЛЯ ВСЕХ СТРАНИЦ) ---
+// --- КРАСИВЫЕ СТИЛИ ---
 const css = `
   * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
   body { margin: 0; background: #f4f7f6; color: #333; display: flex; justify-content: center; padding: 20px; }
@@ -36,7 +36,7 @@ const css = `
   .btn-bad { background: #d63031; width: auto; padding: 8px 15px; font-size: 14px; }
 `;
 
-// --- ГЛАВНАЯ СТРАНИЦА (ФОРМА ПОДАЧИ ЗАЯВКИ) ---
+// --- ГЛАВНАЯ СТРАНИЦА ---
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head>
@@ -78,7 +78,7 @@ app.post('/apply', async (req, res) => {
   res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2 class="success">✅ Успешно!</h2><p style="text-align:center">Заявка отправлена. Ожидайте проверки куратором.</p><div class="link"><a href="/status">Проверить статус заявки</a></div></div></body></html>`);
 });
 
-// --- СТРАНИЦА ПРОВЕРКИ СТАТУСА ДЛЯ КАНДИДАТА ---
+// --- СТРАНИЦА ПРОВЕРКИ СТАТУСА ---
 app.get('/status', (req, res) => {
   res.send(`
     <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус заявки</title><style>${css}</style></head>
@@ -118,7 +118,7 @@ app.post('/status-check', async (req, res) => {
   </div></body></html>`);
 });
 
-// --- АДМИН ПАНЕЛЬ (МИНИМАЛИЗМ) ---
+// --- АДМИН ПАНЕЛЬ ---
 app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
   if (pass !== ADMIN_PASSWORD) {
@@ -131,7 +131,8 @@ app.get('/admin', async (req, res) => {
     <h2>База данных заявок</h2>
     <div class="grid">`;
     
-  apps.forEach(app => {
+  // ЗАЩИТА ОТ ОШИБКИ NULL
+  (apps || []).forEach(app => {
     let badge = 'pending', text = 'На рассмотрении';
     if (app.status === 'Одобрено') { badge = 'approved'; text = 'Одобрено'; }
     if (app.status === 'Отклонено') { badge = 'rejected'; text = 'Отклонено'; }
@@ -147,6 +148,11 @@ app.get('/admin', async (req, res) => {
       </form>
     </div>`;
   });
+  
+  if (!apps || apps.length === 0) {
+    html += `<p style="text-align:center; width:100%;">Пока заявок нет</p>`;
+  }
+
   html += `</div><div class="link" style="margin-top:20px;"><a href="/admin?pass=${pass}">🔄 Обновить список</a></div></div></body></html>`;
   res.send(html);
 });
@@ -159,6 +165,3 @@ app.post('/admin/status', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log('Сервер запущен на порту ' + PORT));
-
-
-// update
