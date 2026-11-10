@@ -12,7 +12,7 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const css = `* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; } body { margin: 0; background: #f4f7f6; color: #333; display: flex; justify-content: center; padding: 20px; } .container { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-top: 20px;} .wide-container { max-width: 900px; } h1, h2 { text-align: center; color: #111; margin-bottom: 20px; } input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; } input:focus { border-color: #6c5ce7; outline: none; } button { width: 100%; padding: 12px; background: #6c5ce7; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; } button:hover { background: #5a4bd1; } .link { text-align: center; margin-top: 15px; font-size: 14px; } .link a { color: #6c5ce7; text-decoration: none; } .alert { padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 14px; background: #ffeaa7; color: #d63031; } .success { background: #55efc4; color: #00b894; } .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #6c5ce7; background: #fafafa; } .card.approved { border-left-color: #00b894; } .card.rejected { border-left-color: #d63031; } .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; } .badge.pending { background: #ffeaa7; color: #d63031; } .badge.approved { background: #55efc4; color: #00b894; } .badge.rejected { background: #fab1a0; color: #d63031; } .btn-ok { background: #00b894; width: auto; padding: 8px 15px; font-size: 14px; margin-right: 5px; } .btn-bad { background: #d63031; width: auto; padding: 8px 15px; font-size: 14px; } .error-page { color: #d63031; text-align: center; padding: 20px; background: #ffeaa7; border-radius: 8px; } .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; } .tab-btn { background: #e0e0e0; color: #333; width: auto; padding: 10px 20px; } .tab-btn.active { background: #6c5ce7; color: #fff; }`;
+const css = `* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; } body { margin: 0; background: #f4f7f6; color: #333; display: flex; justify-content: center; padding: 20px; } .container { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-top: 20px;} .wide-container { max-width: 900px; } h1, h2 { text-align: center; color: #111; margin-bottom: 20px; } input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; } input:focus { border-color: #6c5ce7; outline: none; } button { width: 100%; padding: 12px; background: #6c5ce7; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; } button:hover { background: #5a4bd1; } .link { text-align: center; margin-top: 15px; font-size: 14px; } .link a { color: #6c5ce7; text-decoration: none; } .alert { padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 14px; background: #ffeaa7; color: #d63031; } .success { background: #55efc4; color: #00b894; } .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #6c5ce7; background: #fafafa; } .card.approved { border-left-color: #00b894; } .card.rejected { border-left-color: #d63031; } .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; } .badge.pending { background: #ffeaa7; color: #d63031; } .badge.approved { background: #55efc4; color: #00b894; } .badge.rejected { background: #fab1a0; color: #d63031; } .btn-ok { background: #00b894; width: auto; padding: 8px 15px; font-size: 14px; margin-right: 5px; } .btn-bad { background: #d63031; width: auto; padding: 8px 15px; font-size: 14px; } .error-page { color: #d63031; text-align: center; padding: 20px; background: #ffeaa7; border-radius: 8px; } .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; } .tab-btn { background: #e0e0e0; color: #333; width: auto; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600; } .tab-btn.active { background: #6c5ce7; color: #fff; } .comment-box { background: #fff; border: 1px dashed #6c5ce7; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #444; }`;
 
 app.get('/', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body><div class="container"><h2>Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="1. Ваше имя" required><input name="location" placeholder="2. Страна / Город" required><input name="roblox" placeholder="3. Ник в Roblox" required><input name="discord" placeholder="4. Discord (обязательно)" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="">Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Придумайте Логин" required><input name="password" type="password" placeholder="Придумайте Пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
@@ -37,7 +37,6 @@ app.get('/status', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус</title><style>${css}</style></head><body><div class="container"><h2>Проверка статуса</h2><form action="/status-check" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
 });
 
-// --- ИЗМЕНЕННЫЙ ТЕКСТ ДЛЯ ОДОБРЕННЫХ ---
 app.post('/status-check', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -45,7 +44,7 @@ app.post('/status-check', async (req, res) => {
     if (rows.length === 0) throw new Error('Not found');
     
     const data = rows[0];
-    let statusText = '⏳ На рассмотрении', cardClass = 'pending';
+    let statusText = '⏳ На рассмотрении', cardClass = 'pending', extraText = '';
     
     if (data.status === 'Одобрено') { 
       statusText = '✅ Одобрено! Вам поступит сообщение в Discord.'; 
@@ -56,21 +55,24 @@ app.post('/status-check', async (req, res) => {
       cardClass = 'rejected'; 
     }
 
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p></div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    // Если админ оставил комментарий - показываем его
+    if (data.admin_comment) {
+      extraText = `<div class="comment-box"><b>Сообщение от куратора:</b><br>${data.admin_comment}</div>`;
+    }
+
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   } catch (err) {
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   }
 });
 
-// --- АДМИНКА С ВКЛАДКАМИ ---
 app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
-  const tab = req.query.tab || 'new'; // По умолчанию открыта вкладка "Новые"
+  const tab = req.query.tab || 'new';
 
   if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container" style="max-width:350px; margin-top:100px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
   try {
-    // Если вкладка "Новые" - берем только тех, кто на рассмотрении. Иначе - всех остальных.
     let query = 'SELECT * FROM applications ORDER BY created_at DESC';
     if (tab === 'new') {
       query = `SELECT * FROM applications WHERE status = 'На рассмотрении' ORDER BY created_at DESC`;
@@ -97,11 +99,16 @@ app.get('/admin', async (req, res) => {
       
       html += `<div class="card ${badge}"><span class="badge ${badge}">${text}</span><p><b>${app.name}</b> (${app.role})</p><p style="font-size:13px; color:#666">Город: ${app.location}<br>Roblox: ${app.roblox_nick}<br>Discord: ${app.discord}<br>TG: ${app.telegram || '-'}</p>`;
       
-      // Кнопки показываем только для новых заявок
+      if (app.admin_comment) {
+        html += `<div style="font-size:12px; color:#d63031; margin-bottom:10px;"><b>Ваш комментарий:</b> ${app.admin_comment}</div>`;
+      }
+
       if (tab === 'new') {
-        html += `<form action="/admin/status" method="POST" style="display:flex; gap:5px; margin-top:10px;">
+        // Измененная форма с вызовом prompt для ввода текста
+        html += `<form action="/admin/status" method="POST" style="display:flex; gap:5px; margin-top:10px;" onsubmit="const btn = event.submitter.value; if(btn === 'Одобрено' || btn === 'Отклонено') { const msg = prompt('Введите комментарий для кандидата (необязательно):'); if (msg !== null) { this.comment.value = msg; } else { event.preventDefault(); } }">
           <input type="hidden" name="id" value="${app.id}">
           <input type="hidden" name="pass" value="${pass}">
+          <input type="hidden" name="comment" value="">
           <button name="status" value="Одобрено" class="btn-ok">Одобрить</button>
           <button name="status" value="Отклонено" class="btn-bad">Отклонить</button>
         </form>`;
@@ -121,11 +128,12 @@ app.get('/admin', async (req, res) => {
 });
 
 app.post('/admin/status', async (req, res) => {
-  const { id, status, pass } = req.body;
+  const { id, status, pass, comment } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
   try {
-    await pool.query('UPDATE applications SET status = $1 WHERE id = $2', [status, id]);
-    res.redirect('/admin?pass=' + pass); // После нажатия кнопки возвращаем обратно на список
+    // Обновляем статус и комментарий
+    await pool.query('UPDATE applications SET status = $1, admin_comment = $2 WHERE id = $3', [status, comment || null, id]);
+    res.redirect('/admin?pass=' + pass); 
   } catch (err) {
     res.status(500).send('Ошибка обновления');
   }
