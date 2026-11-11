@@ -54,7 +54,6 @@ const css = `
   #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
-  /* Стили для сообщений */
   .chat-side { position: fixed; top: 0; height: 100vh; width: 260px; z-index: 2; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 20px; padding-bottom: 40px; }
   .chat-side.left { left: 0; align-items: flex-start; }
   .chat-side.right { right: 0; align-items: flex-end; }
@@ -95,7 +94,6 @@ const css = `
 
   @media (max-width: 900px) { .chat-side { display: none; } }
 
-  /* Стили для канваса */
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
 
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
@@ -197,13 +195,14 @@ const scripts = `
     window.addEventListener('mousemove', (e) => {
       glow.style.left = e.clientX + 'px';
       glow.style.top = e.clientY + 'px';
-    });
+    }, { passive: true });
 
-    // --- КУБИКИ (Красивые) ---
+    // --- ОПТИМИЗИРОВАННЫЕ КУБИКИ ---
     if (!window.location.pathname.startsWith('/admin')) {
       const canvas = document.getElementById('bg-canvas');
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: true });
       let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
+      
       const spacing = 50; 
       const cubeSize = 20;
 
@@ -217,29 +216,43 @@ const scripts = `
         cubes = []; 
         for (let x = spacing/2; x < width; x += spacing) { 
           for (let y = spacing/2; y < height; y += spacing) { 
-            cubes.push({ x, y, baseX: x, baseY: y, vx: 0, vy: 0, phase: Math.random() * Math.PI * 2, speed: 0.001 + Math.random() * 0.002, hover: 0 }); 
+            cubes.push({ 
+              x, y, baseX: x, baseY: y, vx: 0, vy: 0, 
+              phase: Math.random() * Math.PI * 2, 
+              speed: 0.001 + Math.random() * 0.002 
+            }); 
           } 
         } 
       }
       
-      window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-      window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
+      window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+      window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
+
+      const isLightTheme = () => document.body.getAttribute('data-theme') === 'light';
 
       function animate(time) {
         ctx.clearRect(0, 0, width, height);
         
+        const fillStyle = isLightTheme() ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)';
+        const strokeStyleBase = isLightTheme() ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.15)';
+        const strokeStyleHover = isLightTheme() ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.6)';
+        
+        ctx.fillStyle = fillStyle;
+
         cubes.forEach(cube => {
-          let targetX = cube.baseX + Math.sin(time * cube.speed + cube.phase) * 10;
-          let targetY = cube.baseY + Math.cos(time * cube.speed + cube.phase) * 10;
+          let targetX = cube.baseX + Math.sin(time * cube.speed + cube.phase) * 8;
+          let targetY = cube.baseY + Math.cos(time * cube.speed + cube.phase) * 8;
           
-          let dx = mouse.x - cube.x, dy = mouse.y - cube.y, dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) { 
+          let dx = mouse.x - cube.x, dy = mouse.y - cube.y;
+          let distSq = dx * dx + dy * dy; 
+          
+          let isHovered = false;
+          if (distSq < 22500) { // 150 * 150
+            let dist = Math.sqrt(distSq);
             let force = (150 - dist) / 150; 
             targetX -= (dx / dist) * force * 40; 
             targetY -= (dy / dist) * force * 40; 
-            cube.hover = Math.min(1, cube.hover + 0.1); 
-          } else {
-            cube.hover = Math.max(0, cube.hover - 0.05); 
+            isHovered = true;
           }
           
           cube.vx += (targetX - cube.x) * 0.05; 
@@ -249,24 +262,7 @@ const scripts = `
           cube.x += cube.vx; 
           cube.y += cube.vy;
 
-          ctx.save();
-          
-          if (cube.hover > 0.05) {
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-            ctx.shadowBlur = 20 * cube.hover;
-          }
-
-          ctx.fillStyle = document.body.getAttribute('data-theme') === 'light' 
-            ? 'rgba(0, 0, 0, 0.05)' 
-            : 'rgba(255, 255, 255, 0.08)';
-          
-          ctx.strokeStyle = document.body.getAttribute('data-theme') === 'light'
-            ? 'rgba(0, 0, 0, 0.1)'
-            : \`rgba(255, 255, 255, \${0.15 + cube.hover * 0.4})\`;
-          
-          ctx.lineWidth = 1.5; 
           ctx.beginPath(); 
-          
           if (ctx.roundRect) {
             ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 5); 
           } else {
@@ -274,8 +270,10 @@ const scripts = `
           }
           
           ctx.fill(); 
+          
+          ctx.strokeStyle = isHovered ? strokeStyleHover : strokeStyleBase;
+          ctx.lineWidth = isHovered ? 2 : 1;
           ctx.stroke();
-          ctx.restore();
         });
         
         requestAnimationFrame(animate);
