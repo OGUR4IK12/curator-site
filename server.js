@@ -443,7 +443,22 @@ app.get('/admin', async (req, res) => {
            if (w) targetLabel = `👤 Лично: ${w.name}`;
         }
 
-        html += `<div class="card"><span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span><span class="badge" style="margin-left:8px; background:transparent;">${targetLabel}</span><h3 style="text-align:left; margin-top:0;">${t.title}</h3><p style="color:var(--text-sec);">${t.description}</p><p><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>${proofBlock}`;
+        html += `<div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span>
+              <span class="badge" style="margin-left:8px; background:transparent;">${targetLabel}</span>
+            </div>
+            <form action="/admin/task/delete" method="POST" onsubmit="return confirm('Удалить задачу в корзину?');" style="margin:0;">
+              <input type="hidden" name="pass" value="${pass}">
+              <input type="hidden" name="id" value="${t.id}">
+              <button type="submit" class="action-btn" style="color:var(--danger); width:auto; padding:6px 12px; font-size:12px;">Удалить</button>
+            </form>
+          </div>
+          <h3 style="text-align:left; margin-top:12px;">${t.title}</h3>
+          <p style="color:var(--text-sec);">${t.description}</p>
+          <p><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>
+          ${proofBlock}`;
         if (t.status === 'Выполнено') {
           html += `<div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--success);">Принять (+очки)</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--danger);">На доработку</button></form></div>`;
         }
@@ -532,6 +547,13 @@ app.post('/admin/task/approve', async (req, res) => {
 app.post('/admin/task/reject', async (req, res) => {
   const { pass, task_id } = req.body;
   await pool.query("UPDATE tasks SET status = 'В работе', proof_file = NULL, proof_filename = NULL WHERE id = $1", [task_id]);
+  res.redirect(`/admin?pass=${pass}&tab=tasks`);
+});
+
+app.post('/admin/task/delete', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
+  await pool.query("UPDATE tasks SET status = 'Удалено' WHERE id = $1", [id]);
   res.redirect(`/admin?pass=${pass}&tab=tasks`);
 });
 
