@@ -36,10 +36,10 @@ const css = `
     margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; 
   }
 
-  /* Канвас для воды (z-index: 0, чтобы был позади, но не пропадал) */
-  #water-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+  /* Канвас для кубиков */
+  #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0.6; }
+  [data-theme="dark"] #bg-canvas { opacity: 0.3; }
 
-  /* Контент поверх воды */
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
   .glass { 
@@ -128,7 +128,7 @@ const css = `
 `;
 
 const scripts = `
-  <canvas id="water-canvas"></canvas>
+  <canvas id="bg-canvas"></canvas>
   <div id="preloader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;backdrop-filter:blur(10px);"><div class="title-container" id="title-container" style="display:flex;gap:2px;"></div></div>
   <button class="dock" onclick="toggleTheme()" id="theme-btn" style="position:fixed; top:20px; right:20px; z-index:100; padding:12px; cursor:pointer; border:none; font-size:16px; font-weight:600;">Тема</button>
 
@@ -156,102 +156,36 @@ const scripts = `
       setTimeout(() => { document.getElementById('preloader').style.opacity = '0'; setTimeout(() => document.getElementById('preloader').remove(), 800); sessionStorage.setItem('preloaderShown', 'true'); }, 2500);
     } else { document.getElementById('preloader').remove(); }
 
-    // --- СКРИПТ ВОДЫ (WebGL) ---
-    const canvas = document.getElementById('water-canvas');
-    const gl = canvas.getContext('webgl');
+    // --- СКРИПТ КУБИКОВ ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
+    const spacing = 60, cubeSize = 20;
 
-    if (gl) {
-      let width = canvas.width = window.innerWidth;
-      let height = canvas.height = window.innerHeight;
+    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initCubes(); }
+    function initCubes() { cubes = []; for (let x = spacing/2; x < width; x += spacing) { for (let y = spacing/2; y < height; y += spacing) { cubes.push({ x, y, baseX: x, baseY: y, vx: 0, vy: 0, phase: Math.random() * Math.PI * 2, speed: 0.001 + Math.random() * 0.002 }); } } }
+    
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
 
-      const vertexShaderSource = \`
-        attribute vec2 position;
-        void main() {
-          gl_Position = vec4(position, 0.0, 1.0);
-        }
-      \`;
-
-      const fragmentShaderSource = \`
-        precision highp float;
-        uniform vec2 u_mouse;
-        uniform float u_time;
-        uniform vec2 u_resolution;
-        uniform float u_theme;
-
-        void main() {
-          vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-          vec2 mouse = u_mouse / u_resolution.xy;
-          
-          // Создаем волны
-          float dist = distance(uv, mouse);
-          float wave = sin(dist * 40.0 - u_time * 4.0) * 0.05;
-          
-          // Цвета (темная и светлая тема)
-          vec3 color1 = vec3(0.05, 0.1, 0.15); // Темный фон
-          vec3 color2 = vec3(0.0, 0.4, 0.8);   // Синий акцент
-          
-          if (u_theme > 0.5) {
-             color1 = vec3(0.9, 0.95, 1.0); // Светлый фон
-             color2 = vec3(0.0, 0.5, 1.0);  // Яркий синий
-          }
-
-          float intensity = smoothstep(0.0, 0.5, (1.0 - dist + wave));
-          vec3 finalColor = mix(color1, color2, intensity * 0.4);
-
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      \`;
-
-      function createShader(gl, type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        return shader;
-      }
-
-      const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-      const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-      const program = gl.createProgram();
-      gl.attachShader(program, vertexShader);
-      gl.attachShader(program, fragmentShader);
-      gl.linkProgram(program);
-      gl.useProgram(program);
-
-      const positionBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-
-      const positionLocation = gl.getAttribLocation(program, 'position');
-      gl.enableVertexAttribArray(positionLocation);
-      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-      const u_mouse = gl.getUniformLocation(program, 'u_mouse');
-      const u_time = gl.getUniformLocation(program, 'u_time');
-      const u_resolution = gl.getUniformLocation(program, 'u_resolution');
-      const u_theme = gl.getUniformLocation(program, 'u_theme');
-
-      let mouseX = width / 2, mouseY = height / 2;
-      window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = height - e.clientY; });
-
-      window.addEventListener('resize', () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        gl.viewport(0, 0, width, height);
+    function animate(time) {
+      ctx.clearRect(0, 0, width, height);
+      cubes.forEach(cube => {
+        let targetX = cube.baseX + Math.sin(time * cube.speed + cube.phase) * 8;
+        let targetY = cube.baseY + Math.cos(time * cube.speed + cube.phase) * 8;
+        let dx = mouse.x - cube.x, dy = mouse.y - cube.y, dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) { let force = (150 - dist) / 150; targetX -= (dx / dist) * force * 30; targetY -= (dy / dist) * force * 30; }
+        cube.vx += (targetX - cube.x) * 0.05; cube.vy += (targetY - cube.y) * 0.05; cube.vx *= 0.8; cube.vy *= 0.8; cube.x += cube.vx; cube.y += cube.vy;
+        
+        ctx.fillStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'; 
+        ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'; 
+        ctx.lineWidth = 1; ctx.beginPath(); 
+        if (ctx.roundRect) ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 4); else ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
+        ctx.fill(); ctx.stroke();
       });
-
-      function render(time) {
-        gl.uniform2f(u_mouse, mouseX, mouseY);
-        gl.uniform1f(u_time, time * 0.001);
-        gl.uniform2f(u_resolution, width, height);
-        gl.uniform1f(u_theme, document.body.getAttribute('data-theme') === 'dark' ? 1.0 : 0.0);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        requestAnimationFrame(render);
-      }
-
-      gl.viewport(0, 0, width, height);
-      requestAnimationFrame(render);
+      requestAnimationFrame(animate);
     }
+    window.addEventListener('resize', resize); resize(); requestAnimationFrame(animate);
   </script>
 `;
 
@@ -285,8 +219,6 @@ const renderDashboard = async (user, res, message = '') => {
   html += `</div><div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); backdrop-filter:blur(20px); z-index:10000; justify-content:center; align-items:center;"><div class="card" style="max-width:400px; width:100%; position:relative; border-radius:32px;"><button class="action-btn" onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:20px; right:20px; padding:8px 12px;">Закрыть</button><h3 style="text-align:center; margin-bottom:24px;">Сменить пароль</h3><form action="/change-password" method="POST"><input type="hidden" name="username" value="${user.username}"><input type="password" name="old_password" placeholder="Старый пароль" required><input type="password" name="new_password" placeholder="Новый пароль" required><button type="submit" style="width:100%;">Обновить</button></form></div></div></div></div></body></html>`;
   res.send(html);
 };
-
-// --- РОУТЫ ---
 
 app.get('/', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="main-menu"><a href="/login" class="menu-panel animate-in delay-1"><h2>Сотрудникам</h2><p>Вход в кабинет для получения задач</p></a><a href="/apply" class="menu-panel animate-in delay-2"><h2>Соискателям</h2><p>Подать заявку в команду</p></a><a href="/check-status" class="menu-panel animate-in delay-3"><h2>Проверка статуса</h2><p>Узнать, рассмотрели ли вашу заявку</p></a></div></div></body></html>`); });
 
