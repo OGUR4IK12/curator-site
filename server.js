@@ -12,14 +12,49 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- СТИЛИ И КАНВАС ---
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+  
+  /* Стили для прелоадера (начальной анимации) */
+  #preloader {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #preloader.hidden { opacity: 0; visibility: hidden; }
+  
+  .preloader-text {
+    color: #fff;
+    font-size: clamp(24px, 5vw, 64px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    text-align: center;
+    overflow: hidden; /* Скрываем текст до анимации */
+  }
+  
+  /* Разбиваем текст на буквы для анимации */
+  .preloader-text span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(100%);
+    animation: revealText 1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  }
+  
+  @keyframes revealText {
+    0% { opacity: 0; transform: translateY(100%); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
   
   body { 
     margin: 0; 
-    background: #0a0a0c; /* Очень темный фон */
+    background: #0a0a0c; 
     color: #e2e8f0; 
     display: flex; 
     justify-content: center; 
@@ -100,17 +135,41 @@ const css = `
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 `;
 
-// Скрипт для плавающих "желейных" кубиков
-const bgScript = `
+// Скрипт: Прелоадер + Желейные кубики
+const scripts = `
+  <!-- Прелоадер -->
+  <div id="preloader">
+    <div class="preloader-text" id="text-container"></div>
+  </div>
+
   <canvas id="bg-canvas"></canvas>
+  
   <script>
+    // 1. Анимация текста
+    const text = "survival in Antarctica";
+    const container = document.getElementById('text-container');
+    
+    // Разбиваем на буквы и создаем span для каждой
+    text.split('').forEach((char, index) => {
+      const span = document.createElement('span');
+      span.textContent = char === ' ' ? '\\u00A0' : char; // Пробел
+      span.style.animationDelay = (index * 0.05) + 's'; // Задержка для каждой буквы
+      container.appendChild(span);
+    });
+
+    // Убираем прелоадер через 3 секунды
+    setTimeout(() => {
+      document.getElementById('preloader').classList.add('hidden');
+    }, 3000);
+
+    // 2. Желейные кубики на фоне
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height;
     let mouse = { x: -1000, y: -1000 };
     let cubes = [];
     const spacing = 70; 
-    const cubeSize = 24; // Маленькие кубики
+    const cubeSize = 24;
 
     function resize() {
       width = canvas.width = window.innerWidth;
@@ -123,10 +182,8 @@ const bgScript = `
       for (let x = spacing/2; x < width; x += spacing) {
         for (let y = spacing/2; y < height; y += spacing) {
           cubes.push({ 
-            x: x, y: y, 
-            baseX: x, baseY: y, 
+            x: x, y: y, baseX: x, baseY: y, 
             vx: 0, vy: 0,
-            // Случайная фаза для покачивания
             phase: Math.random() * Math.PI * 2,
             speed: 0.002 + Math.random() * 0.002
           });
@@ -134,28 +191,19 @@ const bgScript = `
       }
     }
 
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
-    
-    window.addEventListener('touchmove', (e) => {
-      mouse.x = e.touches[0].clientX;
-      mouse.y = e.touches[0].clientY;
-    });
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
 
     function animate(time) {
       ctx.clearRect(0, 0, width, height);
       
       cubes.forEach(cube => {
-        // 1. Эффект "плавания" (покачивание)
         let floatX = Math.sin(time * cube.speed + cube.phase) * 5;
         let floatY = Math.cos(time * cube.speed + cube.phase) * 5;
         
         let targetX = cube.baseX + floatX;
         let targetY = cube.baseY + floatY;
 
-        // 2. Эффект "желе" при наведении мыши
         let dx = mouse.x - cube.x;
         let dy = mouse.y - cube.y;
         let dist = Math.sqrt(dx * dx + dy * dy);
@@ -163,30 +211,24 @@ const bgScript = `
         
         if (dist < maxDist) {
           let force = (maxDist - dist) / maxDist;
-          // Отталкиваем кубик
           targetX -= (dx / dist) * force * 40;
           targetY -= (dy / dist) * force * 40;
         }
 
-        // 3. Физика пружины (железность)
-        let spring = 0.08; // Упругость
-        let friction = 0.75; // Трение (чтобы не тряслось вечно)
+        let spring = 0.08; 
+        let friction = 0.75; 
         
         cube.vx += (targetX - cube.x) * spring;
         cube.vy += (targetY - cube.y) * spring;
-        
         cube.vx *= friction;
         cube.vy *= friction;
-        
         cube.x += cube.vx;
         cube.y += cube.vy;
 
-        // Рисуем белый кубик со скругленными углами
         ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
         ctx.shadowBlur = 10;
         
-        // Рисуем квадрат (можно сделать скругление через roundRect)
         ctx.beginPath();
         if (ctx.roundRect) {
             ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 6);
@@ -194,8 +236,6 @@ const bgScript = `
             ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
         }
         ctx.fill();
-        
-        // Сброс тени, чтобы не было багов
         ctx.shadowBlur = 0;
       });
 
@@ -211,7 +251,7 @@ const bgScript = `
 // --- РОУТЫ ---
 
 app.get('/', (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${bgScript}<div class="container"><h2>Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="1. Ваше имя" required><input name="location" placeholder="2. Страна / Город" required><input name="roblox" placeholder="3. Ник в Roblox" required><input name="discord" placeholder="4. Discord (обязательно)" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="">Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Придумайте Логин" required><input name="password" type="password" placeholder="Придумайте Пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="container"><h2>Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="1. Ваше имя" required><input name="location" placeholder="2. Страна / Город" required><input name="roblox" placeholder="3. Ник в Roblox" required><input name="discord" placeholder="4. Discord (обязательно)" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="">Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Придумайте Логин" required><input name="password" type="password" placeholder="Придумайте Пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
 });
 
 app.post('/apply', async (req, res) => {
@@ -224,15 +264,15 @@ app.post('/apply', async (req, res) => {
     const query = `INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`;
     await pool.query(query, [name, location, roblox, discord, telegram || null, role, cleanUsername, cleanPassword]);
     
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2 style="color:#fff">✅ Успешно!</h2><p style="text-align:center; color:#aaa;">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2 style="color:#fff">✅ Успешно!</h2><p style="text-align:center; color:#aaa;">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
   } catch (err) {
     console.error("Ошибка БД:", err);
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2 style="color:#ff7675">Ошибка базы данных</h2><div class="alert"><b>Текст:</b> ${err.message}</div><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2 style="color:#ff7675">Ошибка базы данных</h2><div class="alert"><b>Текст:</b> ${err.message}</div><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
   }
 });
 
 app.get('/status', (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус</title><style>${css}</style></head><body>${bgScript}<div class="container"><h2>Проверка статуса</h2><form action="/status-check" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус</title><style>${css}</style></head><body>${scripts}<div class="container"><h2>Проверка статуса</h2><form action="/status-check" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
 });
 
 app.post('/status-check', async (req, res) => {
@@ -243,7 +283,7 @@ app.post('/status-check', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
     
     if (rows.length === 0) {
-      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.<br><br><b>Мы искали в базе:</b><br>Логин: "${username}"<br>Пароль: "${password}"</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.<br><br><b>Мы искали в базе:</b><br>Логин: "${username}"<br>Пароль: "${password}"</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
     }
     
     const data = rows[0];
@@ -256,9 +296,9 @@ app.post('/status-check', async (req, res) => {
       extraText = `<div class="comment-box"><b>Сообщение от куратора:</b><br>${data.admin_comment}</div>`;
     }
 
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   } catch (err) {
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2>Ошибка сервера</h2><div class="alert">${err.message}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ошибка сервера</h2><div class="alert">${err.message}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   }
 });
 
@@ -266,7 +306,7 @@ app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
   const tab = req.query.tab || 'new';
 
-  if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
+  if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
   try {
     let query = 'SELECT * FROM applications ORDER BY created_at DESC';
@@ -278,7 +318,7 @@ app.get('/admin', async (req, res) => {
 
     const { rows: apps } = await pool.query(query);
     
-    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container wide-container">
+    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container">
     <h2>База данных заявок</h2>
     
     <div class="tabs">
