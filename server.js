@@ -12,14 +12,14 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- СТИЛИ И КАНВАС ДЛЯ 3D-ФОНА ---
+// --- СТИЛИ И КАНВАС ---
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
   
   body { 
     margin: 0; 
-    background: #0f1115; 
+    background: #0a0a0c; /* Очень темный фон */
     color: #e2e8f0; 
     display: flex; 
     justify-content: center; 
@@ -29,27 +29,24 @@ const css = `
     overflow-x: hidden;
   }
 
-  /* Холст для 3D-кубиков */
   #bg-canvas {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: 0; left: 0; width: 100vw; height: 100vh;
     z-index: -1;
-    pointer-events: none; /* Чтобы клики проходили сквозь фон */
+    pointer-events: none;
   }
   
   .container { 
-    background: rgba(26, 29, 36, 0.85); /* Полупрозрачный фон для контента */
-    backdrop-filter: blur(10px);
+    background: rgba(20, 20, 25, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 40px; 
     border-radius: 16px; 
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6); 
     width: 100%; 
     max-width: 520px; 
     margin-top: 40px;
-    border: 1px solid #2d313a;
+    border: 1px solid rgba(255,255,255,0.1);
     position: relative;
     z-index: 1;
   }
@@ -59,27 +56,27 @@ const css = `
   
   input, select, textarea { 
     width: 100%; padding: 14px; margin-bottom: 16px; 
-    background: #0f1115; border: 1px solid #2d313a; border-radius: 10px; 
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; 
     font-size: 14px; color: #fff; transition: all 0.3s;
   }
-  input:focus, select:focus { border-color: #6c5ce7; outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.2); }
+  input:focus, select:focus { border-color: #fff; outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,0.1); }
   
   button { 
     width: 100%; padding: 14px; 
-    background: linear-gradient(135deg, #6c5ce7, #a29bfe); 
-    color: #fff; border: none; border-radius: 10px; 
-    font-size: 16px; font-weight: 600; cursor: pointer; 
+    background: #fff; 
+    color: #000; border: none; border-radius: 10px; 
+    font-size: 16px; font-weight: 800; cursor: pointer; 
     transition: transform 0.2s, box-shadow 0.2s;
   }
-  button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,92,231,0.4); }
+  button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(255,255,255,0.2); }
   
   .link { text-align: center; margin-top: 20px; font-size: 14px; }
-  .link a { color: #a29bfe; text-decoration: none; transition: color 0.2s; }
+  .link a { color: #a0a0a0; text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: #fff; }
   
   .alert { padding: 14px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(214, 48, 49, 0.15); color: #ff7675; border: 1px solid rgba(214, 48, 49, 0.3); }
   
-  .card { border: 1px solid #2d313a; padding: 20px; border-radius: 12px; margin-bottom: 16px; background: rgba(30, 34, 43, 0.9); border-left: 4px solid #6c5ce7; transition: transform 0.2s; }
+  .card { border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 16px; background: rgba(30, 30, 35, 0.8); border-left: 4px solid #fff; transition: transform 0.2s; }
   .card:hover { transform: scale(1.01); }
   .card.approved { border-left-color: #00b894; }
   .card.rejected { border-left-color: #d63031; }
@@ -89,23 +86,21 @@ const css = `
   .badge.approved { background: rgba(0, 184, 148, 0.2); color: #55efc4; }
   .badge.rejected { background: rgba(214, 48, 49, 0.2); color: #ff7675; }
   
-  .btn-ok { background: #00b894; width: auto; padding: 8px 18px; font-size: 13px; margin-right: 8px; }
-  .btn-ok:hover { box-shadow: 0 4px 15px rgba(0,184,148,0.4); }
-  .btn-bad { background: #d63031; width: auto; padding: 8px 18px; font-size: 13px; }
-  .btn-bad:hover { box-shadow: 0 4px 15px rgba(214,48,49,0.4); }
+  .btn-ok { background: #00b894; color: #fff; width: auto; padding: 8px 18px; font-size: 13px; margin-right: 8px; }
+  .btn-bad { background: #d63031; color: #fff; width: auto; padding: 8px 18px; font-size: 13px; }
   
   .tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; }
-  .tab-btn { background: #1e222b; color: #888; width: auto; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; border: 1px solid #2d313a; transition: all 0.2s; }
-  .tab-btn.active { background: #6c5ce7; color: #fff; border-color: #6c5ce7; }
-  .tab-btn:hover:not(.active) { background: #2d313a; color: #fff; }
+  .tab-btn { background: rgba(255,255,255,0.05); color: #888; width: auto; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s; }
+  .tab-btn.active { background: #fff; color: #000; border-color: #fff; }
+  .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
   
-  .comment-box { background: #0f1115; border: 1px dashed #6c5ce7; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; color: #a29bfe; }
+  .comment-box { background: rgba(0,0,0,0.5); border: 1px dashed #fff; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; color: #ccc; }
   
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } 
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 `;
 
-// Скрипт для 3D кубиков
+// Скрипт для плавающих "желейных" кубиков
 const bgScript = `
   <canvas id="bg-canvas"></canvas>
   <script>
@@ -113,9 +108,9 @@ const bgScript = `
     const ctx = canvas.getContext('2d');
     let width, height;
     let mouse = { x: -1000, y: -1000 };
-    const cubes = [];
-    const spacing = 60; // Размер сетки
-    const cubeSize = 40; // Размер кубика
+    let cubes = [];
+    const spacing = 70; 
+    const cubeSize = 24; // Маленькие кубики
 
     function resize() {
       width = canvas.width = window.innerWidth;
@@ -124,10 +119,17 @@ const bgScript = `
     }
 
     function initCubes() {
-      cubes.length = 0;
-      for (let x = 0; x < width + spacing; x += spacing) {
-        for (let y = 0; y < height + spacing; y += spacing) {
-          cubes.push({ x: x - spacing/2, y: y - spacing/2, baseX: x - spacing/2, baseY: y - spacing/2 });
+      cubes = [];
+      for (let x = spacing/2; x < width; x += spacing) {
+        for (let y = spacing/2; y < height; y += spacing) {
+          cubes.push({ 
+            x: x, y: y, 
+            baseX: x, baseY: y, 
+            vx: 0, vy: 0,
+            // Случайная фаза для покачивания
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.002 + Math.random() * 0.002
+          });
         }
       }
     }
@@ -137,51 +139,64 @@ const bgScript = `
       mouse.y = e.clientY;
     });
     
-    // Для телефонов
     window.addEventListener('touchmove', (e) => {
       mouse.x = e.touches[0].clientX;
       mouse.y = e.touches[0].clientY;
     });
 
-    function animate() {
+    function animate(time) {
       ctx.clearRect(0, 0, width, height);
       
       cubes.forEach(cube => {
-        // Вычисляем расстояние от мыши до кубика
-        let dx = mouse.x - cube.baseX;
-        let dy = mouse.y - cube.baseY;
+        // 1. Эффект "плавания" (покачивание)
+        let floatX = Math.sin(time * cube.speed + cube.phase) * 5;
+        let floatY = Math.cos(time * cube.speed + cube.phase) * 5;
+        
+        let targetX = cube.baseX + floatX;
+        let targetY = cube.baseY + floatY;
+
+        // 2. Эффект "желе" при наведении мыши
+        let dx = mouse.x - cube.x;
+        let dy = mouse.y - cube.y;
         let dist = Math.sqrt(dx * dx + dy * dy);
+        let maxDist = 150;
         
-        // Если мышь близко, кубик отдаляется
-        let maxDist = 200;
-        let force = Math.max(0, (maxDist - dist) / maxDist);
-        
-        let targetX = cube.baseX - (dx / dist) * force * 30;
-        let targetY = cube.baseY - (dy / dist) * force * 30;
+        if (dist < maxDist) {
+          let force = (maxDist - dist) / maxDist;
+          // Отталкиваем кубик
+          targetX -= (dx / dist) * force * 40;
+          targetY -= (dy / dist) * force * 40;
+        }
 
-        // Плавное движение
-        cube.x += (targetX - cube.x) * 0.1;
-        cube.y += (targetY - cube.y) * 0.1;
+        // 3. Физика пружины (железность)
+        let spring = 0.08; // Упругость
+        let friction = 0.75; // Трение (чтобы не тряслось вечно)
+        
+        cube.vx += (targetX - cube.x) * spring;
+        cube.vy += (targetY - cube.y) * spring;
+        
+        cube.vx *= friction;
+        cube.vy *= friction;
+        
+        cube.x += cube.vx;
+        cube.y += cube.vy;
 
-        // Рисуем 3D-кубик (два квадрата для объема)
-        let depth = 4;
+        // Рисуем белый кубик со скругленными углами
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
+        ctx.shadowBlur = 10;
         
-        // Тень / задняя часть
-        ctx.fillStyle = '#1a1d24';
-        ctx.fillRect(cube.x + depth, cube.y + depth, cubeSize, cubeSize);
+        // Рисуем квадрат (можно сделать скругление через roundRect)
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 6);
+        } else {
+            ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
+        }
+        ctx.fill();
         
-        // Основной кубик
-        let gradient = ctx.createLinearGradient(cube.x, cube.y, cube.x + cubeSize, cube.y + cubeSize);
-        gradient.addColorStop(0, '#2d313a');
-        gradient.addColorStop(1, '#0f1115');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(cube.x, cube.y, cubeSize, cubeSize);
-        
-        // Обводка (эффект свечения при наведении)
-        ctx.strokeStyle = force > 0.1 ? 'rgba(108, 92, 231, 0.8)' : 'rgba(45, 49, 58, 0.5)';
-        ctx.lineWidth = force > 0.1 ? 2 : 1;
-        ctx.strokeRect(cube.x, cube.y, cubeSize, cubeSize);
+        // Сброс тени, чтобы не было багов
+        ctx.shadowBlur = 0;
       });
 
       requestAnimationFrame(animate);
@@ -189,7 +204,7 @@ const bgScript = `
 
     window.addEventListener('resize', resize);
     resize();
-    animate();
+    requestAnimationFrame(animate);
   </script>
 `;
 
@@ -209,7 +224,7 @@ app.post('/apply', async (req, res) => {
     const query = `INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`;
     await pool.query(query, [name, location, roblox, discord, telegram || null, role, cleanUsername, cleanPassword]);
     
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2 style="color:#00b894">✅ Успешно!</h2><p style="text-align:center">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2 style="color:#fff">✅ Успешно!</h2><p style="text-align:center; color:#aaa;">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
   } catch (err) {
     console.error("Ошибка БД:", err);
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${bgScript}<div class="container"><h2 style="color:#ff7675">Ошибка базы данных</h2><div class="alert"><b>Текст:</b> ${err.message}</div><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
