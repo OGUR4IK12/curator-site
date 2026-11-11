@@ -165,17 +165,16 @@ const scripts = `
     }
     window.addEventListener('resize', resize); resize();
 
-    // Отслеживаем мышь
     window.addEventListener('mousemove', (e) => {
-      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 150, opacity: 0.5 });
+      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 200, opacity: 0.6 });
     });
 
     function animateWater() {
       ctx.clearRect(0, 0, width, height);
       
-      // Рисуем базовый градиент воды (темный/светлый)
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
       const grad = ctx.createLinearGradient(0, 0, width, height);
-      if (document.body.getAttribute('data-theme') === 'dark') {
+      if (isDark) {
         grad.addColorStop(0, '#050a15');
         grad.addColorStop(1, '#0a192f');
       } else {
@@ -185,10 +184,9 @@ const scripts = `
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
-      // Рисуем волны от мыши
       ripples.forEach((ripple, index) => {
-        ripple.radius += 3;
-        ripple.opacity -= 0.01;
+        ripple.radius += 2.5;
+        ripple.opacity -= 0.008;
 
         if (ripple.opacity <= 0) {
           ripples.splice(index, 1);
@@ -197,10 +195,10 @@ const scripts = `
 
         ctx.beginPath();
         ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' 
-          ? `rgba(0, 122, 255, ${ripple.opacity})` 
-          : `rgba(0, 122, 255, ${ripple.opacity * 1.5})`;
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = isDark 
+          ? `rgba(10, 132, 255, ${ripple.opacity})` 
+          : `rgba(0, 122, 255, ${ripple.opacity})`;
+        ctx.lineWidth = 2;
         ctx.stroke();
       });
 
@@ -241,10 +239,6 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// (Остальные роуты без изменений, они просто рендерят те же страницы с новым CSS/JS)
-// Я не буду дублировать 500 строк роутов, так как они не изменились с прошлого раза.
-// ВАЖНО: Тебе нужно заменить ТОЛЬКО переменную css и переменную scripts в твоем файле server.js на те, что я дал выше.
-
 app.get('/', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}<div class="main-menu"><a href="/login" class="menu-panel animate-in delay-1"><h2>Сотрудникам</h2><p>Вход в кабинет для получения задач</p></a><a href="/apply" class="menu-panel animate-in delay-2"><h2>Соискателям</h2><p>Подать заявку в команду</p></a><a href="/check-status" class="menu-panel animate-in delay-3"><h2>Проверка статуса</h2><p>Узнать, рассмотрели ли вашу заявку</p></a></div></body></html>`); });
 
 app.get('/apply', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="Ваше имя" required><input name="location" placeholder="Страна / Город" required><input name="roblox" placeholder="Ник в Roblox" required><input name="discord" placeholder="Discord" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="" disabled selected hidden>Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Логин для входа" required><input name="password" type="password" placeholder="Пароль для входа" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/">← На главную</a></div></div></body></html>`); });
@@ -274,9 +268,26 @@ app.get('/admin', async (req, res) => { const pass = req.query.pass; const tab =
     if (tab === 'trash') { const { rows: delApps } = await pool.query('SELECT * FROM applications WHERE is_deleted = true ORDER BY created_at DESC'); const { rows: delTasks } = await pool.query('SELECT * FROM tasks WHERE status = \'Удалено\' ORDER BY created_at DESC'); html += `<div class="admin-grid animate-in"><div class="admin-col"><h3 style="text-align:left;">Удаленные заявки</h3>`; if (delApps.length === 0) html += `<p style="color:var(--text-sec); text-align:center;">Пусто</p>`; delApps.forEach(app => { html += `<div class="card" style="opacity:0.6;"><h3 style="margin:0; font-size:16px; text-align:left;">${app.name}</h3><p style="font-size:13px; color:var(--text-sec); margin:8px 0;">${app.role}</p><form action="/admin/restore-app" method="POST"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="width:100%; padding:12px;">Восстановить</button></form></div>`; }); html += `</div><div class="admin-col"><h3 style="text-align:left;">Удаленные задачи</h3>`; if (delTasks.length === 0) html += `<p style="color:var(--text-sec); text-align:center;">Пусто</p>`; delTasks.forEach(task => { html += `<div class="card" style="opacity:0.6;"><h3 style="margin:0; font-size:16px; text-align:left;">${task.title}</h3><p style="font-size:13px; color:var(--text-sec); margin:8px 0;">${task.role}</p><form action="/admin/restore-task" method="POST"><input type="hidden" name="id" value="${task.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="width:100%; padding:12px;">Восстановить</button></form></div>`; }); html += `</div></div>`; }
     html += `</div></body></html>`; res.send(html); } catch (err) { res.send(`<h2 style="color:var(--danger);">Ошибка: ${err.message}</h2>`); } });
 
-// ... (Остальные POST-роуты админки остаются без изменений) ...
+app.post('/admin/status', async (req, res) => { const { id, status, pass, comment } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('UPDATE applications SET status = $1, admin_comment = $2 WHERE id = $3', [status, comment || null, id]); res.redirect('/admin?pass=' + pass + '&tab=applications'); });
+
+app.post('/admin/announcement', async (req, res) => { const { title, content, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('INSERT INTO announcements (title, content) VALUES ($1, $2)', [title, content]); res.redirect('/admin?pass=' + pass + '&tab=announcements'); });
+
+app.post('/admin/delete-announcement', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('DELETE FROM announcements WHERE id = $1', [id]); res.redirect('/admin?pass=' + pass + '&tab=announcements'); });
+
+app.post('/admin/task', async (req, res) => { const { role, title, description, deadline, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('INSERT INTO tasks (role, title, description, deadline) VALUES ($1, $2, $3, $4)', [role, title, description, deadline || null]); res.redirect('/admin?pass=' + pass + '&tab=tasks'); });
+
+app.post('/admin/comment', async (req, res) => { const { id, text, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); const { rows } = await pool.query('SELECT comments FROM tasks WHERE id = $1', [id]); const newComment = (rows[0].comments || '') + `\nАдмин: ${text}`; await pool.query('UPDATE tasks SET comments = $1 WHERE id = $2', [newComment.trim(), id]); res.redirect('/admin?pass=' + pass + '&tab=tasks'); });
+
+app.post('/admin/approve-task', async (req, res) => { const { id, username, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('UPDATE tasks SET status = \'Одобрено\' WHERE id = $1', [id]); await pool.query('UPDATE applications SET points = points + 10 WHERE username = $1', [username]); res.redirect('/admin?pass=' + pass + '&tab=tasks'); });
+
+app.post('/admin/delete-app', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('UPDATE applications SET is_deleted = true WHERE id = $1', [id]); res.redirect('/admin?pass=' + pass + '&tab=applications'); });
+
+app.post('/admin/delete-task', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query("UPDATE tasks SET status = 'Удалено' WHERE id = $1", [id]); res.redirect('/admin?pass=' + pass + '&tab=tasks'); });
+
+app.post('/admin/kick-worker', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('UPDATE applications SET is_deleted = true WHERE id = $1', [id]); res.redirect('/admin?pass=' + pass + '&tab=workers'); });
+
+app.post('/admin/restore-app', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query('UPDATE applications SET is_deleted = false WHERE id = $1', [id]); res.redirect('/admin?pass=' + pass + '&tab=trash'); });
+
+app.post('/admin/restore-task', async (req, res) => { const { id, pass } = req.body; if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа'); await pool.query("UPDATE tasks SET status = 'Свободна' WHERE id = $1", [id]); res.redirect('/admin?pass=' + pass + '&tab=trash'); });
 
 app.listen(PORT, () => console.log('Сервер запущен на порту ' + PORT));
-
-
-//upbddf
