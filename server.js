@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
   
-  /* --- ПРЕЛОАДЕР --- */
+  /* --- ПРЕЛОАДЕР С ЖИДКИМ СТЕКЛОМ --- */
   #preloader {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -25,7 +25,7 @@ const css = `
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: opacity 1s ease, visibility 1s ease;
+    transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), visibility 1.2s ease;
     overflow: hidden;
   }
   #preloader.hidden { opacity: 0; visibility: hidden; }
@@ -35,25 +35,25 @@ const css = `
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1);
     display: flex;
     gap: 2px;
+    z-index: 2;
   }
   
-  /* Поднимаем текст выше после сборки */
   .title-container.move-up {
     transform: translate(-50%, -120%);
   }
 
   .letter {
-    color: #fff;
-    font-size: clamp(24px, 5vw, 56px);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: clamp(28px, 5vw, 64px);
     font-weight: 800;
     display: inline-block;
     opacity: 0;
-    /* Стартовые позиции для разлета из углов */
-    transform: translate(var(--startX), var(--startY)) scale(0.5) rotate(var(--startRot));
-    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.2s ease;
+    text-shadow: 0 0 20px rgba(255,255,255,0.3);
+    transform: translate(var(--startX), var(--startY)) scale(0.3) rotate(var(--startRot));
+    transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.2s ease;
   }
 
   .letter.assembled {
@@ -61,18 +61,38 @@ const css = `
     transform: translate(0, 0) scale(1) rotate(0deg);
   }
 
+  /* Светящаяся линия под текстом */
+  .glow-line {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    box-shadow: 0 0 20px 3px rgba(255,255,255,0.4);
+    opacity: 0;
+    transition: all 1.5s ease;
+    z-index: 1;
+  }
+  .glow-line.show {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+
   .subtitle {
     position: absolute;
-    bottom: 40%;
+    top: 65%;
     left: 50%;
     transform: translate(-50%, 20px);
-    color: #666;
+    color: rgba(255, 255, 255, 0.6);
     font-size: 14px;
     font-weight: 600;
-    letter-spacing: 4px;
+    letter-spacing: 6px;
     text-transform: uppercase;
     opacity: 0;
-    transition: all 1s ease;
+    transition: all 1.2s ease;
+    z-index: 2;
   }
 
   .subtitle.show {
@@ -80,19 +100,22 @@ const css = `
     transform: translate(-50%, 0);
   }
 
-  /* --- ОСНОВНОЙ САЙТ --- */
+  /* --- ОСНОВНОЙ САЙТ (ЖИДКОЕ СТЕКЛО) --- */
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
   
   body { 
     margin: 0; 
-    background: #0a0a0c; 
-    color: #e2e8f0; 
+    background: #050505; 
+    color: #fff; 
     display: flex; 
     justify-content: center; 
     padding: 20px; 
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(108,92,231,0.1) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0,184,148,0.1) 0%, transparent 40%);
   }
 
   #bg-canvas {
@@ -102,17 +125,24 @@ const css = `
     pointer-events: none;
   }
   
+  /* ЭФФЕКТ ЖИДКОГО СТЕКЛА */
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+  }
+
   .container { 
-    background: rgba(20, 20, 25, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     padding: 40px; 
-    border-radius: 16px; 
-    box-shadow: 0 15px 50px rgba(0,0,0,0.6); 
     width: 100%; 
     max-width: 520px; 
     margin-top: 40px;
-    border: 1px solid rgba(255,255,255,0.1);
     position: relative;
     z-index: 1;
   }
@@ -121,55 +151,81 @@ const css = `
   h1, h2 { text-align: center; color: #fff; margin-bottom: 25px; font-weight: 800; letter-spacing: -0.5px; }
   
   input, select, textarea { 
-    width: 100%; padding: 14px; margin-bottom: 16px; 
-    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; 
-    font-size: 14px; color: #fff; transition: all 0.3s;
+    width: 100%; padding: 16px; margin-bottom: 16px; 
+    background: rgba(0,0,0,0.3); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 14px; 
+    font-size: 15px; color: #fff; transition: all 0.3s;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
   }
-  input:focus, select:focus { border-color: #fff; outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,0.1); }
+  input:focus, select:focus { 
+    border-color: rgba(255,255,255,0.3); 
+    outline: none; 
+    background: rgba(0,0,0,0.5);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 3px rgba(255,255,255,0.05); 
+  }
   
   button { 
-    width: 100%; padding: 14px; 
-    background: #fff; 
-    color: #000; border: none; border-radius: 10px; 
+    width: 100%; padding: 16px; 
+    background: rgba(255,255,255,0.9); 
+    color: #000; border: none; border-radius: 14px; 
     font-size: 16px; font-weight: 800; cursor: pointer; 
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    box-shadow: 0 4px 15px rgba(255,255,255,0.1);
   }
-  button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(255,255,255,0.2); }
+  button:hover { 
+    transform: translateY(-2px) scale(1.01); 
+    box-shadow: 0 10px 30px rgba(255,255,255,0.25);
+    background: #fff;
+  }
+  button:active {
+    transform: translateY(0) scale(0.98);
+  }
   
-  .link { text-align: center; margin-top: 20px; font-size: 14px; }
-  .link a { color: #a0a0a0; text-decoration: none; transition: color 0.2s; }
+  .link { text-align: center; margin-top: 24px; font-size: 14px; }
+  .link a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: #fff; }
   
-  .alert { padding: 14px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(214, 48, 49, 0.15); color: #ff7675; border: 1px solid rgba(214, 48, 49, 0.3); }
+  .alert { padding: 16px; border-radius: 14px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(214, 48, 49, 0.1); color: #ff7675; border: 1px solid rgba(214, 48, 49, 0.2); }
   
-  .card { border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 16px; background: rgba(30, 30, 35, 0.8); border-left: 4px solid #fff; transition: transform 0.2s; }
-  .card:hover { transform: scale(1.01); }
+  .card { 
+    padding: 24px; 
+    border-radius: 20px; 
+    margin-bottom: 16px; 
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-left: 4px solid #fff; 
+    transition: all 0.3s;
+  }
+  .card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.04); }
   .card.approved { border-left-color: #00b894; }
   .card.rejected { border-left-color: #d63031; }
   
-  .badge { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .badge.pending { background: rgba(253, 203, 110, 0.2); color: #fdcb6e; }
-  .badge.approved { background: rgba(0, 184, 148, 0.2); color: #55efc4; }
-  .badge.rejected { background: rgba(214, 48, 49, 0.2); color: #ff7675; }
+  .badge { display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge.pending { background: rgba(253, 203, 110, 0.15); color: #fdcb6e; border: 1px solid rgba(253, 203, 110, 0.2); }
+  .badge.approved { background: rgba(0, 184, 148, 0.15); color: #55efc4; border: 1px solid rgba(0, 184, 148, 0.2); }
+  .badge.rejected { background: rgba(214, 48, 49, 0.15); color: #ff7675; border: 1px solid rgba(214, 48, 49, 0.2); }
   
-  .btn-ok { background: #00b894; color: #fff; width: auto; padding: 8px 18px; font-size: 13px; margin-right: 8px; }
-  .btn-bad { background: #d63031; color: #fff; width: auto; padding: 8px 18px; font-size: 13px; }
+  .btn-ok { background: rgba(0, 184, 148, 0.8); color: #fff; width: auto; padding: 10px 20px; font-size: 13px; margin-right: 8px; }
+  .btn-ok:hover { background: #00b894; }
+  .btn-bad { background: rgba(214, 48, 49, 0.8); color: #fff; width: auto; padding: 10px 20px; font-size: 13px; }
+  .btn-bad:hover { background: #d63031; }
   
-  .tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; }
-  .tab-btn { background: rgba(255,255,255,0.05); color: #888; width: auto; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s; }
-  .tab-btn.active { background: #fff; color: #000; border-color: #fff; }
-  .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; background: rgba(255,255,255,0.03); padding: 6px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+  .tab-btn { background: transparent; color: rgba(255,255,255,0.5); width: auto; padding: 10px 24px; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.3s; }
+  .tab-btn.active { background: rgba(255,255,255,0.1); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .tab-btn:hover:not(.active) { color: #fff; }
   
-  .comment-box { background: rgba(0,0,0,0.5); border: 1px dashed #fff; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; color: #ccc; }
+  .comment-box { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 14px; border-radius: 12px; margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.8); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
   
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } 
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 `;
 
-// Скрипт: Прелоадер + Желейные кубики
 const scripts = `
-  <!-- Прелоадер -->
   <div id="preloader">
+    <div class="glow-line" id="glow-line"></div>
     <div class="title-container" id="title-container"></div>
     <div class="subtitle" id="subtitle">SUBMIT APPLICATION</div>
   </div>
@@ -181,10 +237,8 @@ const scripts = `
     const titleText = "SURVIVAL IN ANTARCTICA";
     const container = document.getElementById('title-container');
     
-    // Разбиваем текст на буквы
     titleText.split('').forEach((char, index) => {
       if (char === ' ') {
-        // Делаем пробел
         const space = document.createElement('span');
         space.innerHTML = '&nbsp;';
         container.appendChild(space);
@@ -193,7 +247,6 @@ const scripts = `
         span.textContent = char;
         span.className = 'letter';
         
-        // Генерируем случайные координаты для старта из углов/краев экрана
         const randomX = (Math.random() - 0.5) * window.innerWidth * 1.5;
         const randomY = (Math.random() - 0.5) * window.innerHeight * 1.5;
         const randomRot = (Math.random() - 0.5) * 180;
@@ -206,28 +259,31 @@ const scripts = `
       }
     });
 
-    // Запускаем анимацию сбора букв с задержкой
+    // Сборка букв
     setTimeout(() => {
       document.querySelectorAll('.letter').forEach((letter, index) => {
-        // Небольшая случайная задержка для каждой буквы, чтобы они слетались хаотично
         setTimeout(() => {
           letter.classList.add('assembled');
-        }, index * 30);
+        }, index * 25);
       });
     }, 100);
 
-    // Через 2 секунды после сборки поднимаем текст и показываем подзаголовок
+    // Появление линии и подъём текста
     setTimeout(() => {
       document.getElementById('title-container').classList.add('move-up');
-      document.getElementById('subtitle').classList.add('show');
-    }, 2000);
+      document.getElementById('glow-line').classList.add('show');
+    }, 1800);
 
-    // Через 4 секунды полностью убираем прелоадер
+    // Появление подзаголовка
+    setTimeout(() => {
+      document.getElementById('subtitle').classList.add('show');
+    }, 2200);
+
+    // Исчезновение прелоадера
     setTimeout(() => {
       document.getElementById('preloader').classList.add('hidden');
-      // Удаляем прелоадер из DOM через секунду после скрытия, чтобы не мешал
-      setTimeout(() => document.getElementById('preloader').remove(), 1000); 
-    }, 4000);
+      setTimeout(() => document.getElementById('preloader').remove(), 1200); 
+    }, 4500);
 
     // 2. ЖЕЛЕЙНЫЕ КУБИКИ
     const canvas = document.getElementById('bg-canvas');
@@ -235,8 +291,8 @@ const scripts = `
     let width, height;
     let mouse = { x: -1000, y: -1000 };
     let cubes = [];
-    const spacing = 70; 
-    const cubeSize = 24;
+    const spacing = 60; 
+    const cubeSize = 20;
 
     function resize() {
       width = canvas.width = window.innerWidth;
@@ -252,7 +308,7 @@ const scripts = `
             x: x, y: y, baseX: x, baseY: y, 
             vx: 0, vy: 0,
             phase: Math.random() * Math.PI * 2,
-            speed: 0.002 + Math.random() * 0.002
+            speed: 0.001 + Math.random() * 0.002
           });
         }
       }
@@ -265,8 +321,8 @@ const scripts = `
       ctx.clearRect(0, 0, width, height);
       
       cubes.forEach(cube => {
-        let floatX = Math.sin(time * cube.speed + cube.phase) * 5;
-        let floatY = Math.cos(time * cube.speed + cube.phase) * 5;
+        let floatX = Math.sin(time * cube.speed + cube.phase) * 8;
+        let floatY = Math.cos(time * cube.speed + cube.phase) * 8;
         
         let targetX = cube.baseX + floatX;
         let targetY = cube.baseY + floatY;
@@ -274,16 +330,16 @@ const scripts = `
         let dx = mouse.x - cube.x;
         let dy = mouse.y - cube.y;
         let dist = Math.sqrt(dx * dx + dy * dy);
-        let maxDist = 150;
+        let maxDist = 120;
         
         if (dist < maxDist) {
           let force = (maxDist - dist) / maxDist;
-          targetX -= (dx / dist) * force * 40;
-          targetY -= (dy / dist) * force * 40;
+          targetX -= (dx / dist) * force * 30;
+          targetY -= (dy / dist) * force * 30;
         }
 
-        let spring = 0.08; 
-        let friction = 0.75; 
+        let spring = 0.05; 
+        let friction = 0.8; 
         
         cube.vx += (targetX - cube.x) * spring;
         cube.vy += (targetY - cube.y) * spring;
@@ -292,18 +348,19 @@ const scripts = `
         cube.x += cube.vx;
         cube.y += cube.vy;
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
-        ctx.shadowBlur = 10;
+        // Рисуем светящиеся стеклянные кубики
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
         
         ctx.beginPath();
         if (ctx.roundRect) {
-            ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 6);
+            ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 4);
         } else {
             ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
         }
         ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.stroke();
       });
 
       requestAnimationFrame(animate);
@@ -318,7 +375,7 @@ const scripts = `
 // --- РОУТЫ ---
 
 app.get('/', (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="container"><h2>Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="1. Ваше имя" required><input name="location" placeholder="2. Страна / Город" required><input name="roblox" placeholder="3. Ник в Roblox" required><input name="discord" placeholder="4. Discord (обязательно)" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="">Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Придумайте Логин" required><input name="password" type="password" placeholder="Придумайте Пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="1. Ваше имя" required><input name="location" placeholder="2. Страна / Город" required><input name="roblox" placeholder="3. Ник в Roblox" required><input name="discord" placeholder="4. Discord (обязательно)" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="" disabled selected hidden>Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Придумайте Логин" required><input name="password" type="password" placeholder="Придумайте Пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
 });
 
 app.post('/apply', async (req, res) => {
@@ -331,15 +388,15 @@ app.post('/apply', async (req, res) => {
     const query = `INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`;
     await pool.query(query, [name, location, roblox, discord, telegram || null, role, cleanUsername, cleanPassword]);
     
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2 style="color:#fff">✅ Успешно!</h2><p style="text-align:center; color:#aaa;">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2 style="color:#fff">✅ Успешно!</h2><p style="text-align:center; color:rgba(255,255,255,0.7);">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
   } catch (err) {
     console.error("Ошибка БД:", err);
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2 style="color:#ff7675">Ошибка базы данных</h2><div class="alert"><b>Текст:</b> ${err.message}</div><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2 style="color:#ff7675">Ошибка базы данных</h2><div class="alert"><b>Текст:</b> ${err.message}</div><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
   }
 });
 
 app.get('/status', (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус</title><style>${css}</style></head><body>${scripts}<div class="container"><h2>Проверка статуса</h2><form action="/status-check" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус</title><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Проверка статуса</h2><form action="/status-check" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← Назад</a></div></div></body></html>`);
 });
 
 app.post('/status-check', async (req, res) => {
@@ -350,7 +407,7 @@ app.post('/status-check', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
     
     if (rows.length === 0) {
-      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.<br><br><b>Мы искали в базе:</b><br>Логин: "${username}"<br>Пароль: "${password}"</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
     }
     
     const data = rows[0];
@@ -363,9 +420,9 @@ app.post('/status-check', async (req, res) => {
       extraText = `<div class="comment-box"><b>Сообщение от куратора:</b><br>${data.admin_comment}</div>`;
     }
 
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   } catch (err) {
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container"><h2>Ошибка сервера</h2><div class="alert">${err.message}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Ошибка сервера</h2><div class="alert">${err.message}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   }
 });
 
@@ -373,7 +430,7 @@ app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
   const tab = req.query.tab || 'new';
 
-  if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
+  if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
   try {
     let query = 'SELECT * FROM applications ORDER BY created_at DESC';
@@ -385,12 +442,12 @@ app.get('/admin', async (req, res) => {
 
     const { rows: apps } = await pool.query(query);
     
-    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container">
+    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass">
     <h2>База данных заявок</h2>
     
     <div class="tabs">
-      <a href="/admin?pass=${pass}&tab=new" class="tab-btn ${tab === 'new' ? 'active' : ''}">Новые заявки</a>
-      <a href="/admin?pass=${pass}&tab=processed" class="tab-btn ${tab === 'processed' ? 'active' : ''}">Рассмотренные (Архив)</a>
+      <a href="/admin?pass=${pass}&tab=new" class="tab-btn ${tab === 'new' ? 'active' : ''}">Новые</a>
+      <a href="/admin?pass=${pass}&tab=processed" class="tab-btn ${tab === 'processed' ? 'active' : ''}">Архив</a>
     </div>
 
     <div class="grid">`;
@@ -400,10 +457,10 @@ app.get('/admin', async (req, res) => {
       if (app.status === 'Одобрено') { badge = 'approved'; text = 'Одобрено'; }
       if (app.status === 'Отклонено') { badge = 'rejected'; text = 'Отклонено'; }
       
-      html += `<div class="card ${badge}"><span class="badge ${badge}">${text}</span><p><b>${app.name}</b> (${app.role})</p><p style="font-size:13px; color:#a0aec0">Город: ${app.location}<br>Roblox: ${app.roblox_nick}<br>Discord: ${app.discord}<br>TG: ${app.telegram || '-'}</p>`;
+      html += `<div class="card ${badge}"><span class="badge ${badge}">${text}</span><p style="font-size:16px; margin-bottom:8px;"><b>${app.name}</b> <span style="color:rgba(255,255,255,0.4); font-size:14px;">(${app.role})</span></p><p style="font-size:13px; color:rgba(255,255,255,0.6); line-height:1.6;">Город: ${app.location}<br>Roblox: ${app.roblox_nick}<br>Discord: ${app.discord}<br>TG: ${app.telegram || '-'}</p>`;
       
       if (app.admin_comment) {
-        html += `<div style="font-size:13px; color:#ff7675; margin-bottom:10px;"><b>Ваш комментарий:</b> ${app.admin_comment}</div>`;
+        html += `<div style="font-size:13px; color:#ff7675; margin: 10px 0;"><b>Ваш комментарий:</b> ${app.admin_comment}</div>`;
       }
 
       if (tab === 'new') {
@@ -419,7 +476,7 @@ app.get('/admin', async (req, res) => {
     });
     
     if (!apps || apps.length === 0) {
-      html += `<p style="text-align:center; width:100%; color:#888;">Здесь пока пусто</p>`;
+      html += `<p style="text-align:center; width:100%; color:rgba(255,255,255,0.3);">Здесь пока пусто</p>`;
     }
     
     html += `</div><div class="link" style="margin-top:30px;"><a href="/admin?pass=${pass}&tab=${tab}">🔄 Обновить</a></div></div></body></html>`;
