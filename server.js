@@ -30,179 +30,129 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   
   :root {
-    --text: #ffffff; --text-sec: #a1a1aa; --bg: #000000;
-    --glass-bg: rgba(30, 30, 32, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-    --accent: #0a84ff; --danger: #ff453a; --success: #32d74b; --warning: #ff9f0a;
-    --input-bg: rgba(0, 0, 0, 0.2);
-    --input-bg-focus: rgba(0, 0, 0, 0.4);
+    --text: #ffffff; --text-sec: #8e8e93; --bg: #09090b;
+    --card-bg: #18181b; --border: #27272a;
+    --accent: #ffffff; --danger: #ff453a; --success: #32d74b; --warning: #ff9f0a; --blue: #0a84ff;
   }
   
   [data-theme="light"] {
-    --text: #1c1c1e; --text-sec: #52525b; --bg: #f4f4f5;
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(0, 0, 0, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-    --accent: #007aff; --danger: #ff3b30; --success: #34c759; --warning: #ff9500;
-    --input-bg: rgba(255, 255, 255, 0.5);
-    --input-bg-focus: rgba(255, 255, 255, 0.8);
+    --text: #09090b; --text-sec: #52525b; --bg: #f4f4f5;
+    --card-bg: #ffffff; --border: #e4e4e7;
+    --accent: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --blue: #007aff;
   }
 
-  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+  * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; margin: 0; padding: 0; }
   
   body { 
-    margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; 
+    background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    /* Технологичная сетка на фоне */
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-position: center center;
   }
 
-  #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0.6; }
-  [data-theme="dark"] #bg-canvas { opacity: 0.3; }
+  /* Свечение за курсором */
+  #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
+  [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
-  .glass { 
-    background: var(--glass-bg); 
-    backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%); 
-    border: 1px solid var(--glass-border); 
-    box-shadow: var(--glass-shadow); 
-    border-radius: 32px; 
-  }
-
-  .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; flex-wrap: wrap; justify-content: center; }
-  .dock-btn { display: flex; align-items: center; justify-content: center; padding: 0 16px; height: 44px; border-radius: 12px; background: transparent; border: none; cursor: pointer; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 14px; font-weight: 500; text-decoration: none; }
-  .dock-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
-  [data-theme="dark"] .dock-btn:hover { background: rgba(255,255,255,0.1); }
-  .dock-btn.active { background: rgba(255,255,255,0.3); }
-
+  .glass { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  
   .container { padding: 40px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
   .wide-container { max-width: 1100px; width: 100%; }
   
-  h1, h2, h3 { text-align: center; color: var(--text); margin-bottom: 16px; font-weight: 600; letter-spacing: -0.04em; }
-  
-  @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  .animate-in { animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+  h1, h2, h3 { text-align: center; color: var(--text); margin-bottom: 24px; font-weight: 700; letter-spacing: -0.03em; }
+  h1 { font-size: 32px; } h2 { font-size: 24px; } h3 { font-size: 18px; }
+
+  /* Строгие анимации */
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: slideUp 0.5s ease forwards; opacity: 0; }
   .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; } .delay-3 { animation-delay: 0.3s; }
 
   input, select, textarea { 
-    width: 100%; padding: 16px; margin-bottom: 16px; 
-    background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 16px; 
-    font-size: 15px; color: var(--text); outline: none; backdrop-filter: blur(10px);
+    width: 100%; padding: 14px 16px; margin-bottom: 16px; 
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px; 
+    font-size: 14px; color: var(--text); outline: none; transition: all 0.2s;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--input-bg-focus); }
+  input:focus, select:focus, textarea:focus { border-color: var(--text); }
   
-  button { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(0,122,255,0.3); }
-  button:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 25px rgba(0,122,255,0.4); }
-  button:active { transform: scale(0.98); }
+  button { width: 100%; padding: 14px; background: var(--accent); color: var(--bg); border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  button:hover { opacity: 0.8; }
+  button:active { transform: scale(0.99); }
 
-  .link { text-align: center; margin-top: 24px; font-size: 14px; }
+  .link { text-align: center; margin-top: 24px; font-size: 13px; }
   .link a { color: var(--text-sec); text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: var(--text); }
   
-  .alert { padding: 16px; border-radius: 16px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(255,59,48,0.1); color: var(--danger); border: 1px solid rgba(255,59,48,0.2); backdrop-filter: blur(10px); }
+  .alert { padding: 14px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 13px; background: rgba(255,69,58,0.1); color: var(--danger); border: 1px solid rgba(255,69,58,0.2); }
   
   .card { 
-    padding: 24px; border-radius: 24px; margin-bottom: 16px; 
-    background: var(--glass-bg); backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; 
+    padding: 24px; border-radius: 12px; margin-bottom: 16px; 
+    background: var(--card-bg); border: 1px solid var(--border); 
+    transition: border-color 0.2s, transform 0.2s; position: relative; 
   }
-  .card:hover { transform: translateY(-4px) scale(1.01); }
+  .card:hover { border-color: var(--text-sec); transform: translateY(-2px); }
   
-  .badge { display: inline-block; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px; background: rgba(255,255,255,0.4); color: var(--text); backdrop-filter: blur(5px); }
-  .badge.pending { color: var(--warning); border: 1px solid rgba(255,149,0,0.3); }
-  .badge.approved { color: var(--success); border: 1px solid rgba(52,199,89,0.3); }
-  .badge.rejected { color: var(--danger); border: 1px solid rgba(255,59,48,0.3); }
-  .badge.taken { color: var(--accent); border: 1px solid rgba(0,122,255,0.3); }
+  .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg); border: 1px solid var(--border); color: var(--text-sec); }
+  .badge.pending { color: var(--warning); border-color: rgba(255,159,10,0.3); }
+  .badge.approved { color: var(--success); border-color: rgba(50,215,75,0.3); }
+  .badge.rejected { color: var(--danger); border-color: rgba(255,69,58,0.3); }
+  .badge.taken { color: var(--blue); border-color: rgba(10,132,255,0.3); }
   
   .action-bar { display: flex; gap: 8px; margin-top: 20px; }
-  .action-btn { display: flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.4); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 600; color: var(--text); }
-  .action-btn:hover { background: rgba(255,255,255,0.6); transform: scale(1.05); }
+  .action-btn { display: flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 500; color: var(--text); }
+  .action-btn:hover { border-color: var(--text); }
   
   .main-menu { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
-  .menu-panel { padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border-radius: 28px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
-  .menu-panel:hover { transform: translateY(-6px) scale(1.02); }
-  .menu-panel h2 { font-size: 22px; margin-bottom: 8px; }
-  .menu-panel p { color: var(--text-sec); font-size: 15px; margin-bottom: 0; }
+  .menu-panel { padding: 32px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--text); transition: all 0.2s; cursor: pointer; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); }
+  .menu-panel:hover { border-color: var(--text-sec); transform: translateY(-2px); }
+  .menu-panel h2 { font-size: 20px; margin-bottom: 8px; text-align: left; }
+  .menu-panel p { color: var(--text-sec); font-size: 14px; margin-bottom: 0; }
 
   .grid { display: grid; grid-template-columns: 1fr; gap: 16px; } 
   @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
   .admin-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
   @media (min-width: 900px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
   
-  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); transition: all 0.2s; }
+  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: var(--card-bg); border: 1px solid var(--border); }
   
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
   @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
-  .stat-card { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); padding: 24px; border-radius: 24px; text-align: center; box-shadow: var(--glass-shadow); }
-  .stat-val { font-size: 36px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
-  .stat-lbl { font-size: 13px; color: var(--text-sec); font-weight: 500; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; }
+  .stat-val { font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
+  .stat-lbl { font-size: 12px; color: var(--text-sec); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .comments-box { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.03); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 13px; }
-  [data-theme="dark"] .comments-box { background: rgba(255,255,255,0.03); }
-  .announcement { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); padding: 24px; border-radius: 24px; margin-bottom: 24px; box-shadow: var(--glass-shadow); }
+  .comments-box { margin-top: 16px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+  .announcement { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid var(--blue); }
   
-  .progress-bar { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; margin-top: 16px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s; }
+  .progress-bar { width: 100%; height: 6px; background: var(--bg); border-radius: 3px; margin-top: 16px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-fill { height: 100%; background: var(--text); border-radius: 3px; transition: width 0.5s; }
+  
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+
+  .theme-toggle { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; font-size: 16px; }
 `;
 
 const scripts = `
-  <canvas id="bg-canvas"></canvas>
-  <div id="preloader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;backdrop-filter:blur(10px);"><div class="title-container" id="title-container" style="display:flex;gap:2px;"></div></div>
-  <button class="dock" onclick="toggleTheme()" id="theme-btn" style="position:fixed; top:20px; right:20px; z-index:100; padding:12px; cursor:pointer; border:none; font-size:16px; font-weight:600;">Тема</button>
+  <div id="cursor-glow"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
   <script>
     function toggleTheme() {
       const body = document.body;
-      const isDark = body.getAttribute('data-theme') === 'dark';
-      body.setAttribute('data-theme', isDark ? '' : 'dark');
-      localStorage.setItem('theme', isDark ? '' : 'dark');
+      const isLight = body.getAttribute('data-theme') === 'light';
+      body.setAttribute('data-theme', isLight ? '' : 'light');
+      localStorage.setItem('theme', isLight ? '' : 'light');
     }
-    if (localStorage.getItem('theme') !== 'light') document.body.setAttribute('data-theme', 'dark');
+    if (localStorage.getItem('theme') === 'light') document.body.setAttribute('data-theme', 'light');
 
-    if (!sessionStorage.getItem('preloaderShown')) {
-      const titleText = "SURVIVAL IN ANTARCTICA";
-      const container = document.getElementById('title-container');
-      titleText.split('').forEach((char, index) => {
-        if (char === ' ') { const space = document.createElement('span'); space.innerHTML = '&nbsp;'; container.appendChild(space); } 
-        else {
-          const span = document.createElement('span'); span.textContent = char; 
-          span.style.cssText = "color:var(--text);font-size:clamp(20px,4vw,36px);font-weight:700;display:inline-block;opacity:0;transform:translateY(20px) scale(0.8);transition:all 0.8s cubic-bezier(0.175,0.885,0.32,1.275);";
-          container.appendChild(span);
-          setTimeout(() => span.style.cssText += "opacity:1;transform:translateY(0) scale(1);", 100 + index * 40);
-        }
-      });
-      setTimeout(() => { document.getElementById('preloader').style.opacity = '0'; setTimeout(() => document.getElementById('preloader').remove(), 800); sessionStorage.setItem('preloaderShown', 'true'); }, 2500);
-    } else { document.getElementById('preloader').remove(); }
-
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
-    const spacing = 60, cubeSize = 20;
-
-    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initCubes(); }
-    function initCubes() { cubes = []; for (let x = spacing/2; x < width; x += spacing) { for (let y = spacing/2; y < height; y += spacing) { cubes.push({ x, y, baseX: x, baseY: y, vx: 0, vy: 0, phase: Math.random() * Math.PI * 2, speed: 0.001 + Math.random() * 0.002 }); } } }
-    
-    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-    window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
-
-    function animate(time) {
-      ctx.clearRect(0, 0, width, height);
-      cubes.forEach(cube => {
-        let targetX = cube.baseX + Math.sin(time * cube.speed + cube.phase) * 8;
-        let targetY = cube.baseY + Math.cos(time * cube.speed + cube.phase) * 8;
-        let dx = mouse.x - cube.x, dy = mouse.y - cube.y, dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 150) { let force = (150 - dist) / 150; targetX -= (dx / dist) * force * 30; targetY -= (dy / dist) * force * 30; }
-        cube.vx += (targetX - cube.x) * 0.05; cube.vy += (targetY - cube.y) * 0.05; cube.vx *= 0.8; cube.vy *= 0.8; cube.x += cube.vx; cube.y += cube.vy;
-        
-        ctx.fillStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'; 
-        ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'; 
-        ctx.lineWidth = 1; ctx.beginPath(); 
-        if (ctx.roundRect) ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 4); else ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
-        ctx.fill(); ctx.stroke();
-      });
-      requestAnimationFrame(animate);
-    }
-    window.addEventListener('resize', resize); resize(); requestAnimationFrame(animate);
+    const glow = document.getElementById('cursor-glow');
+    window.addEventListener('mousemove', (e) => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    });
   </script>
 `;
 
@@ -218,10 +168,18 @@ const renderDashboard = async (user, res, message = '') => {
   const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
   const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
 
-  let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
-    <div class="dock"><a href="/logout" class="dock-btn">Выйти</a><button class="dock-btn" onclick="document.getElementById('settings-modal').style.display='flex'">Настройки</button></div>
-    <div style="text-align:center; margin-bottom:32px;"><h2 style="margin:0;">${user.name}</h2><p style="color:var(--text-sec); font-size:15px; margin-top:8px;">${user.role} · Очков: <b style="color:var(--warning);">${user.points}</b></p></div>
-    ${message ? `<div class="alert" style="background:rgba(52,199,89,0.1); color:var(--success); border-color:rgba(52,199,89,0.2);">${message}</div>` : ''}
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кабинет</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+      <div>
+        <h2 style="text-align:left; margin:0; font-size:24px;">${user.name}</h2>
+        <p style="color:var(--text-sec); font-size:14px; margin-top:4px;">${user.role} · Очки: <b style="color:var(--warning);">${user.points}</b></p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="document.getElementById('settings-modal').style.display='flex'" class="action-btn">Настройки</button>
+        <a href="/logout" class="action-btn">Выйти</a>
+      </div>
+    </div>
+    ${message ? `<div class="alert" style="background:rgba(50,215,75,0.1); color:var(--success); border-color:rgba(50,215,75,0.2);">${message}</div>` : ''}
     ${announcement}
     <div class="grid">`;
   
@@ -229,32 +187,32 @@ const renderDashboard = async (user, res, message = '') => {
   else {
     tasks.forEach((task, i) => {
       let badgeClass = 'pending', badgeText = 'Свободна'; let actionHtml = ''; let deadlineHtml = '';
-      if (task.deadline) { const d = new Date(task.deadline).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); deadlineHtml = `<p style="font-size:13px; color:var(--danger); margin-bottom:16px; font-weight:600;">Дедлайн: ${d}</p>`; }
+      if (task.deadline) { const d = new Date(task.deadline).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); deadlineHtml = `<p style="font-size:12px; color:var(--danger); margin-bottom:12px; font-weight:600;">Дедлайн: ${d}</p>`; }
       if (task.status === 'Свободна') { actionHtml = `<form action="/task/take" method="POST"><input type="hidden" name="task_id" value="${task.id}"><button type="submit" style="width:100%;">Взять задачу</button></form>`; }
       else if (task.status === 'В работе') {
-        if (task.taken_by === user.username) { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:16px;"><input type="hidden" name="task_id" value="${task.id}"><input type="file" name="proof" required style="padding:12px; font-size:14px; margin-bottom:12px; border-radius:16px;"><button type="submit" style="width:100%; background:var(--success); box-shadow:0 4px 15px rgba(52,199,89,0.3);">Отправить на проверку</button></form>`; }
-        else { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<p style="color:var(--text-sec); font-size:14px; font-weight:500; padding-top:12px; border-top:1px solid var(--glass-border); margin-top:16px;">Взял: ${task.taken_by}</p>`; }
-      } else if (task.status === 'Выполнено') { badgeClass = 'approved'; badgeText = 'На проверке'; actionHtml = `<p style="color:var(--success); font-size:14px; font-weight:500; padding-top:12px; border-top:1px solid var(--glass-border); margin-top:16px;">Сдал: ${task.taken_by}</p>`; }
+        if (task.taken_by === user.username) { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:16px;"><input type="hidden" name="task_id" value="${task.id}"><input type="file" name="proof" required style="padding:10px; font-size:13px; margin-bottom:12px; border-radius:8px;"><button type="submit" class="btn-success" style="width:100%;">Отправить на проверку</button></form>`; }
+        else { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<p style="color:var(--text-sec); font-size:13px; font-weight:500; padding-top:12px; border-top:1px solid var(--border); margin-top:16px;">Взял: ${task.taken_by}</p>`; }
+      } else if (task.status === 'Выполнено') { badgeClass = 'approved'; badgeText = 'На проверке'; actionHtml = `<p style="color:var(--success); font-size:13px; font-weight:500; padding-top:12px; border-top:1px solid var(--border); margin-top:16px;">Сдал: ${task.taken_by}</p>`; }
       
       let taskType = '';
-      if (task.role === 'all') taskType = '<span class="badge approved" style="background:rgba(52,199,89,0.2); border-color:rgba(52,199,89,0.5); color:var(--success);">Всем</span>';
-      else if (task.role === user.username) taskType = '<span class="badge" style="background:rgba(255,149,0,0.2); border-color:rgba(255,149,0,0.5); color:var(--warning);">Лично вам</span>';
-      else taskType = `<span class="badge pending">${task.role}</span>`;
+      if (task.role === 'all') taskType = '<span class="badge" style="color:var(--blue); border-color:var(--blue);">Всем</span>';
+      else if (task.role === user.username) taskType = '<span class="badge" style="color:var(--warning); border-color:var(--warning);">Лично</span>';
+      else taskType = `<span class="badge">${task.role}</span>`;
 
-      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}">${taskType}<span class="badge ${badgeClass}">${badgeText}</span><h3 style="margin-top:0; text-align:left;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:15px; margin-bottom:20px; line-height:1.5;">${task.description}</p>${actionHtml}`;
+      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}"><div style="display:flex; gap:8px;">${taskType}<span class="badge ${badgeClass}">${badgeText}</span></div><h3 style="margin-top:12px; text-align:left; font-size:16px;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:14px; margin-bottom:16px; line-height:1.5;">${task.description}</p>${actionHtml}`;
       if (task.comments) html += `<div class="comments-box"><b>Чат:</b><br><span style="color:var(--text-sec)">${task.comments.replace(/\n/g, '<br>')}</span></div>`;
       html += `</div>`;
     });
   }
   
   html += `</div>
-  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="glass" style="max-width:400px; width:100%; padding:40px; position:relative;">
-      <button onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:15px; right:15px; background:transparent; border:none; color:var(--text-sec); font-size:14px; cursor:pointer; width:auto;">Закрыть</button>
+  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="glass" style="max-width:400px; width:100%; padding:32px; position:relative;">
+      <button onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:16px; right:16px; background:transparent; border:none; color:var(--text-sec); font-size:20px; cursor:pointer; width:auto;">&times;</button>
       <h3 style="text-align:center; margin-bottom:24px;">Сменить пароль</h3>
       <form action="/change-password" method="POST">
-        <input type="password" name="old_password" placeholder="Старый пароль" required style="background:var(--input-bg); border:1px solid var(--glass-border);">
-        <input type="password" name="new_password" placeholder="Новый пароль" required style="background:var(--input-bg); border:1px solid var(--glass-border);">
+        <input type="password" name="old_password" placeholder="Старый пароль" required>
+        <input type="password" name="new_password" placeholder="Новый пароль" required>
         <button type="submit" style="width:100%;">Обновить</button>
       </form>
     </div>
@@ -370,34 +328,36 @@ app.get('/admin', async (req, res) => {
     const { rows: allWorkers } = await pool.query("SELECT username, name FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY name ASC");
     
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Админ-панель</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
-    <div class="dock">
-      <a href="/admin?pass=${pass}&tab=dash" class="dock-btn ${tab === 'dash' ? 'active' : ''}">Обзор</a>
-      <a href="/admin?pass=${pass}&tab=announcements" class="dock-btn ${tab === 'announcements' ? 'active' : ''}">Объявления</a>
-      <a href="/admin?pass=${pass}&tab=tasks" class="dock-btn ${tab === 'tasks' ? 'active' : ''}">Задачи</a>
-      <a href="/admin?pass=${pass}&tab=applications" class="dock-btn ${tab === 'applications' ? 'active' : ''}">Заявки</a>
-      <a href="/admin?pass=${pass}&tab=workers" class="dock-btn ${tab === 'workers' ? 'active' : ''}">Сотрудники</a>
-      <a href="/admin?pass=${pass}&tab=trash" class="dock-btn ${tab === 'trash' ? 'active' : ''}">Корзина</a>
-    </div>
-    <h2 style="text-align:center; margin-bottom:32px;">Админ-панель</h2>`;
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+      <h2 style="text-align:left; margin:0; font-size:24px;">Админ-панель</h2>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="/admin?pass=${pass}&tab=dash" class="action-btn ${tab === 'dash' ? 'active' : ''}" style="${tab === 'dash' ? 'background:var(--text); color:var(--bg);' : ''}">Обзор</a>
+        <a href="/admin?pass=${pass}&tab=announcements" class="action-btn ${tab === 'announcements' ? 'active' : ''}" style="${tab === 'announcements' ? 'background:var(--text); color:var(--bg);' : ''}">Объявления</a>
+        <a href="/admin?pass=${pass}&tab=tasks" class="action-btn ${tab === 'tasks' ? 'active' : ''}" style="${tab === 'tasks' ? 'background:var(--text); color:var(--bg);' : ''}">Задачи</a>
+        <a href="/admin?pass=${pass}&tab=applications" class="action-btn ${tab === 'applications' ? 'active' : ''}" style="${tab === 'applications' ? 'background:var(--text); color:var(--bg);' : ''}">Заявки</a>
+        <a href="/admin?pass=${pass}&tab=workers" class="action-btn ${tab === 'workers' ? 'active' : ''}" style="${tab === 'workers' ? 'background:var(--text); color:var(--bg);' : ''}">Сотрудники</a>
+        <a href="/admin?pass=${pass}&tab=trash" class="action-btn ${tab === 'trash' ? 'active' : ''}" style="${tab === 'trash' ? 'background:var(--text); color:var(--bg);' : ''}">Корзина</a>
+      </div>
+    </div>`;
 
     // 1. ОБЗОР
     if (tab === 'dash') { 
       html += `<div class="stats-grid animate-in delay-1"><div class="stat-card"><div class="stat-val">${s.workers}</div><div class="stat-lbl">Сотрудников</div></div><div class="stat-card"><div class="stat-val">${s.new_apps}</div><div class="stat-lbl">Новых заявок</div></div><div class="stat-card"><div class="stat-val">${s.in_work}</div><div class="stat-lbl">В работе</div></div><div class="stat-card"><div class="stat-val">${s.on_review}</div><div class="stat-lbl">На проверке</div></div></div>`; 
       const totalTasks = parseInt(s.in_work) + parseInt(s.on_review); 
       const progress = totalTasks === 0 ? 0 : Math.round((s.on_review / totalTasks) * 100); 
-      html += `<div class="card animate-in delay-2"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="margin:0; font-size:16px;">Прогресс</h3><span style="font-size:14px; font-weight:600; color:var(--accent);">${progress}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div>`; 
+      html += `<div class="card animate-in delay-2"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="margin:0; font-size:15px;">Прогресс</h3><span style="font-size:13px; font-weight:600;">${progress}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div>`; 
       const { rows: topWorkers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY points DESC LIMIT 5"); 
-      html += `<div class="admin-col animate-in delay-3" style="margin-top:32px;"><h3 style="text-align:left;">Топ сотрудников</h3>`; 
-      topWorkers.forEach((w) => { html += `<div class="worker-row"><div><p style="margin:0; font-size:16px; font-weight:600;"><b>${w.name}</b></p><p style="margin:4px 0 0; color:var(--text-sec); font-size:13px;">${w.role}</p></div><div style="font-size:16px; font-weight:700; color:var(--warning);">${w.points} очков</div></div>`; }); 
+      html += `<div class="admin-col animate-in delay-3" style="margin-top:32px;"><h3 style="text-align:left; font-size:16px;">Топ сотрудников</h3>`; 
+      topWorkers.forEach((w) => { html += `<div class="worker-row"><div><p style="margin:0; font-size:15px; font-weight:600;"><b>${w.name}</b></p><p style="margin:4px 0 0; color:var(--text-sec); font-size:12px;">${w.role}</p></div><div style="font-size:15px; font-weight:700;">${w.points} очк.</div></div>`; }); 
       html += `</div>`; 
     }
 
     // 2. ОБЪЯВЛЕНИЯ
     else if (tab === 'announcements') {
-      html += `<div class="card animate-in"><h3 style="text-align:left;">Новое объявление</h3><form action="/admin/announcement" method="POST" style="margin-top:20px;"><input type="hidden" name="pass" value="${pass}"><input name="title" placeholder="Заголовок" required><textarea name="content" placeholder="Текст..." rows="3" required></textarea><button type="submit" style="width:100%;">Опубликовать</button></form></div>`;
+      html += `<div class="card animate-in"><h3 style="text-align:left; font-size:16px;">Новое объявление</h3><form action="/admin/announcement" method="POST" style="margin-top:16px;"><input type="hidden" name="pass" value="${pass}"><input name="title" placeholder="Заголовок" required><textarea name="content" placeholder="Текст..." rows="3" required></textarea><button type="submit" style="width:100%;">Опубликовать</button></form></div>`;
       const { rows: anns } = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC');
       html += `<div class="grid">`;
-      anns.forEach(ann => { html += `<div class="card"><div style="display:flex; justify-content:space-between; align-items:start;"><div><h3 style="margin-top:0; text-align:left;">${ann.title}</h3><p style="font-size:14px; color:var(--text-sec);">${ann.content}</p></div><form action="/admin/delete-announcement" method="POST" onsubmit="return confirm('Удалить?');"><input type="hidden" name="id" value="${ann.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="action-btn" style="color:var(--danger);">Удалить</button></form></div></div>`; });
+      anns.forEach(ann => { html += `<div class="card"><div style="display:flex; justify-content:space-between; align-items:start;"><div><h3 style="margin-top:0; text-align:left; font-size:16px;">${ann.title}</h3><p style="font-size:14px; color:var(--text-sec);">${ann.content}</p></div><form action="/admin/delete-announcement" method="POST" onsubmit="return confirm('Удалить?');"><input type="hidden" name="id" value="${ann.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="action-btn" style="color:var(--danger); border-color:var(--border);">Удалить</button></form></div></div>`; });
       html += `</div>`;
     }
 
@@ -407,16 +367,16 @@ app.get('/admin', async (req, res) => {
       
       let workerOptions = allWorkers.map(w => `<option value="${w.username}">${w.name} (${w.username})</option>`).join('');
       
-      html += `<div class="card animate-in"><h3 style="text-align:left;">Создать задачу</h3>
-      <form action="/admin/task/add" method="POST" style="margin-top:20px;">
+      html += `<div class="card animate-in"><h3 style="text-align:left; font-size:16px;">Создать задачу</h3>
+      <form action="/admin/task/add" method="POST" style="margin-top:16px;">
         <input type="hidden" name="pass" value="${pass}">
         <input name="title" placeholder="Название задачи" required>
         <textarea name="description" placeholder="Описание задачи..." rows="3" required></textarea>
         
-        <select name="target" required style="margin-bottom:8px;">
+        <select name="target" required>
           <option value="" disabled selected hidden>Кому выдать задачу?</option>
-          <option value="all" style="font-weight:bold; color:var(--success);">🌐 Всем сотрудникам</option>
-          <optgroup label="Отделу (Роли)">
+          <option value="all">Всем сотрудникам</option>
+          <optgroup label="Отделу">
             <option value="Билдер">Билдеры</option>
             <option value="Скриптер">Скриптеры</option>
             <option value="GUI-дизайнер">GUI-дизайнеры</option>
@@ -428,39 +388,39 @@ app.get('/admin', async (req, res) => {
           </optgroup>
         </select>
 
-        <input type="datetime-local" name="deadline" style="color-scheme:dark;">
+        <input type="datetime-local" name="deadline">
         <button type="submit">Создать задачу</button>
       </form></div>`;
       
-      html += `<h3 style="text-align:left; margin-top:32px;">Список задач</h3>`;
+      html += `<h3 style="text-align:left; margin-top:32px; font-size:16px;">Список задач</h3>`;
       tasksList.forEach(t => {
-        let proofBlock = t.proof_file ? `<a href="${t.proof_file}" download="${t.proof_filename || 'proof'}" class="action-btn" style="margin-top:12px; background:var(--accent); color:#fff;">Скачать отчет (${t.proof_filename || 'файл'})</a>` : '';
+        let proofBlock = t.proof_file ? `<a href="${t.proof_file}" download="${t.proof_filename || 'proof'}" class="action-btn" style="margin-top:12px;">Скачать отчет (${t.proof_filename || 'файл'})</a>` : '';
         
         let targetLabel = t.role;
-        if (t.role === 'all') targetLabel = '🌐 Всем';
+        if (t.role === 'all') targetLabel = 'Всем';
         else if (!['Билдер', 'Скриптер', 'GUI-дизайнер', 'Аниматор', 'Тестер'].includes(t.role)) {
            const w = allWorkers.find(x => x.username === t.role);
-           if (w) targetLabel = `👤 Лично: ${w.name}`;
+           if (w) targetLabel = `Лично: ${w.name}`;
         }
 
         html += `<div class="card">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
               <span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span>
-              <span class="badge" style="margin-left:8px; background:transparent;">${targetLabel}</span>
+              <span class="badge">${targetLabel}</span>
             </div>
-            <form action="/admin/task/delete" method="POST" onsubmit="return confirm('Удалить задачу в корзину?');" style="margin:0;">
+            <form action="/admin/task/delete" method="POST" onsubmit="return confirm('Удалить задачу?');" style="margin:0;">
               <input type="hidden" name="pass" value="${pass}">
               <input type="hidden" name="id" value="${t.id}">
-              <button type="submit" class="action-btn" style="color:var(--danger); width:auto; padding:6px 12px; font-size:12px;">Удалить</button>
+              <button type="submit" class="action-btn" style="color:var(--danger); border-color:var(--border);">Удалить</button>
             </form>
           </div>
-          <h3 style="text-align:left; margin-top:12px;">${t.title}</h3>
-          <p style="color:var(--text-sec);">${t.description}</p>
-          <p><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>
+          <h3 style="text-align:left; margin-top:12px; font-size:16px;">${t.title}</h3>
+          <p style="color:var(--text-sec); font-size:14px;">${t.description}</p>
+          <p style="font-size:14px; margin-top:8px;"><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>
           ${proofBlock}`;
         if (t.status === 'Выполнено') {
-          html += `<div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--success);">Принять (+очки)</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--danger);">На доработку</button></form></div>`;
+          html += `<div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-success">Принять</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-danger">На доработку</button></form></div>`;
         }
         html += `</div>`;
       });
@@ -469,17 +429,17 @@ app.get('/admin', async (req, res) => {
     // 4. ЗАЯВКИ
     else if (tab === 'applications') {
       const { rows: apps } = await pool.query("SELECT * FROM applications WHERE status = 'На рассмотрении' AND is_deleted = false");
-      html += `<h3 style="text-align:left;">Новые заявки</h3>`;
+      html += `<h3 style="text-align:left; font-size:16px;">Новые заявки</h3>`;
       if (apps.length === 0) html += `<p style="color:var(--text-sec);">Нет новых заявок.</p>`;
       apps.forEach(a => {
-        html += `<div class="card"><h3 style="text-align:left; margin-top:0;">${a.name} (${a.role})</h3><p><b>Roblox:</b> ${a.roblox_nick} | <b>Discord:</b> ${a.discord}</p><p><b>Логин:</b> ${a.username}</p><div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/app/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><button type="submit" style="background:var(--success);">Одобрить</button></form><form action="/admin/app/reject" method="POST" style="flex:1; display:flex; gap:8px;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><input name="comment" placeholder="Причина отклонения" required style="margin:0; padding:12px;"><button type="submit" style="background:var(--danger); width:auto;">Отклонить</button></form></div></div>`;
+        html += `<div class="card"><h3 style="text-align:left; margin-top:0; font-size:16px;">${a.name} (${a.role})</h3><p style="font-size:14px; margin-top:8px;"><b>Roblox:</b> ${a.roblox_nick} | <b>Discord:</b> ${a.discord}</p><p style="font-size:14px;"><b>Логин:</b> ${a.username}</p><div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/app/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><button type="submit" class="btn-success">Одобрить</button></form><form action="/admin/app/reject" method="POST" style="flex:1; display:flex; gap:8px;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><input name="comment" placeholder="Причина" required style="margin:0; padding:10px;"><button type="submit" class="btn-danger" style="width:auto;">Отклонить</button></form></div></div>`;
       });
     }
 
-    // 5. СОТРУДНИКИ (ПОЛНАЯ ИНФА)
+    // 5. СОТРУДНИКИ
     else if (tab === 'workers') {
       const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY role ASC");
-      html += `<h3 style="text-align:left;">Активные сотрудники (${workers.length})</h3>`;
+      html += `<h3 style="text-align:left; font-size:16px;">Активные сотрудники (${workers.length})</h3>`;
       if (workers.length === 0) html += `<p style="color:var(--text-sec);">Пока никого нет.</p>`;
       
       workers.forEach(w => {
@@ -497,7 +457,7 @@ app.get('/admin', async (req, res) => {
           <form action="/admin/worker/fire" method="POST" style="margin-top: 4px;">
             <input type="hidden" name="pass" value="${pass}">
             <input type="hidden" name="id" value="${w.id}">
-            <button type="submit" style="background:var(--danger); padding:10px 16px; font-size:13px; width:auto;">Уволить</button>
+            <button type="submit" class="btn-danger" style="padding:8px 12px; font-size:12px; width:auto;">Уволить</button>
           </form>
         </div>`;
       });
@@ -506,10 +466,10 @@ app.get('/admin', async (req, res) => {
     // 6. КОРЗИНА
     else if (tab === 'trash') {
       const { rows: trash } = await pool.query("SELECT * FROM applications WHERE is_deleted = true");
-      html += `<h3 style="text-align:left;">Корзина (уволенные / отклоненные)</h3>`;
+      html += `<h3 style="text-align:left; font-size:16px;">Корзина</h3>`;
       if (trash.length === 0) html += `<p style="color:var(--text-sec);">Корзина пуста.</p>`;
       trash.forEach(tr => {
-        html += `<div class="worker-row"><div><p style="margin:0; font-size:16px; font-weight:600;"><b>${tr.name}</b> (${tr.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:13px;">Статус: ${tr.status}</p></div><div style="display:flex; gap:10px;"><form action="/admin/worker/restore" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" style="background:var(--success); padding:10px 16px; font-size:13px; width:auto;">Восстановить</button></form><form action="/admin/worker/delete-forever" method="POST" onsubmit="return confirm('УДАЛИТЬ НАВСЕГДА? Логин освободится!');"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" style="background:var(--danger); padding:10px 16px; font-size:13px; width:auto;">Удалить навсегда</button></form></div></div>`;
+        html += `<div class="worker-row"><div><p style="margin:0; font-size:15px; font-weight:600;"><b>${tr.name}</b> (${tr.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:12px;">Статус: ${tr.status}</p></div><div style="display:flex; gap:10px;"><form action="/admin/worker/restore" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-success" style="padding:8px 12px; font-size:12px; width:auto;">Восстановить</button></form><form action="/admin/worker/delete-forever" method="POST" onsubmit="return confirm('УДАЛИТЬ НАВСЕГДА?');"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-danger" style="padding:8px 12px; font-size:12px; width:auto;">Удалить</button></form></div></div>`;
       });
     }
 
