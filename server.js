@@ -23,8 +23,12 @@ app.post('/apply', async (req, res) => {
   if (!name || !location || !roblox || !discord || !role || !username || !password) return res.redirect('/?error=1');
 
   try {
+    // Убираем лишние пробелы по краям у логина и пароля
+    const cleanUsername = username.trim();
+    const cleanPassword = password.trim();
+
     const query = `INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`;
-    await pool.query(query, [name, location, roblox, discord, telegram || null, role, username, password]);
+    await pool.query(query, [name, location, roblox, discord, telegram || null, role, cleanUsername, cleanPassword]);
     
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2 class="success">✅ Успешно!</h2><p style="text-align:center">Заявка отправлена.</p><div class="link"><a href="/status">Проверить статус</a></div></div></body></html>`);
   } catch (err) {
@@ -38,10 +42,29 @@ app.get('/status', (req, res) => {
 });
 
 app.post('/status-check', async (req, res) => {
-  const { username, password } = req.body;
+  // Убираем пробелы, чтобы не было ошибок при вводе
+  const username = (req.body.username || '').trim();
+  const password = (req.body.password || '').trim();
+  
   try {
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
-    if (rows.length === 0) throw new Error('Not found');
+    
+    // Если не нашли — выводим на экран, что именно искали
+    if (rows.length === 0) {
+      return res.send(`
+        <!DOCTYPE html><html><head><style>${css}</style></head><body>
+        <div class="container">
+          <h2>Ошибка</h2>
+          <div class="alert">
+            Неверный логин или пароль.<br><br>
+            <b>Мы искали в базе:</b><br>
+            Логин: "${username}"<br>
+            Пароль: "${password}"
+          </div>
+          <div class="link"><a href="/status">Назад</a></div>
+        </div></body></html>
+      `);
+    }
     
     const data = rows[0];
     let statusText = '⏳ На рассмотрении', cardClass = 'pending', extraText = '';
@@ -55,14 +78,13 @@ app.post('/status-check', async (req, res) => {
       cardClass = 'rejected'; 
     }
 
-    // Если админ оставил комментарий - показываем его
     if (data.admin_comment) {
       extraText = `<div class="comment-box"><b>Сообщение от куратора:</b><br>${data.admin_comment}</div>`;
     }
 
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ваша заявка</h2><div class="card ${cardClass}"><p><b>Имя:</b> ${data.name}</p><p><b>Роль:</b> ${data.role}</p><p><b>Статус:</b> <span class="badge ${cardClass}">${statusText}</span></p>${extraText}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   } catch (err) {
-    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body><div class="container"><h2>Ошибка сервера</h2><div class="alert">${err.message}</div><div class="link"><a href="/status">Назад</a></div></div></body></html>`);
   }
 });
 
@@ -104,8 +126,7 @@ app.get('/admin', async (req, res) => {
       }
 
       if (tab === 'new') {
-        // Измененная форма с вызовом prompt для ввода текста
-        html += `<form action="/admin/status" method="POST" style="display:flex; gap:5px; margin-top:10px;" onsubmit="const btn = event.submitter.value; if(btn === 'Одобрено' || btn === 'Отклонено') { const msg = prompt('Введите комментарий для кандидата (необязательно):'); if (msg !== null) { this.comment.value = msg; } else { event.preventDefault(); } }">
+        html += `<form action="/admin/status" method="POST" style="display:flex; gap:5px; margin-top:10px;" onsubmit="const btn = event.submitter.value; const msg = prompt('Введите комментарий для кандидата (необязательно):'); if (msg !== null) { this.comment.value = msg; } else { event.preventDefault(); }">
           <input type="hidden" name="id" value="${app.id}">
           <input type="hidden" name="pass" value="${pass}">
           <input type="hidden" name="comment" value="">
@@ -131,7 +152,6 @@ app.post('/admin/status', async (req, res) => {
   const { id, status, pass, comment } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
   try {
-    // Обновляем статус и комментарий
     await pool.query('UPDATE applications SET status = $1, admin_comment = $2 WHERE id = $3', [status, comment || null, id]);
     res.redirect('/admin?pass=' + pass); 
   } catch (err) {
