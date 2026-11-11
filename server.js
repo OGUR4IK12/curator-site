@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session); // ДОБАВЛЕНО
 const app = express();
 const PORT = process.env.PORT || 10000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2566';
@@ -13,7 +14,13 @@ const pool = new Pool({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// СОХРАНЯЕМ СЕССИИ В БАЗУ ДАННЫХ (ЧТОБЫ НЕ СБРАСЫВАЛИСЬ)
 app.use(session({
+  store: new pgSession({
+    pool: pool,
+    tableName: 'user_sessions', // Таблица создастся автоматически
+    createTableIfNotExists: true
+  }),
   secret: process.env.SESSION_SECRET || 'antarctica_secret_key_2566',
   resave: false,
   saveUninitialized: false,
