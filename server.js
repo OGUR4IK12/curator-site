@@ -1,7 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session); // ДОБАВЛЕНО
+const pgSession = require('connect-pg-simple')(session);
 const app = express();
 const PORT = process.env.PORT || 10000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2566';
@@ -14,11 +14,10 @@ const pool = new Pool({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// СОХРАНЯЕМ СЕССИИ В БАЗУ ДАННЫХ (ЧТОБЫ НЕ СБРАСЫВАЛИСЬ)
 app.use(session({
   store: new pgSession({
     pool: pool,
-    tableName: 'user_sessions', // Таблица создастся автоматически
+    tableName: 'user_sessions',
     createTableIfNotExists: true
   }),
   secret: process.env.SESSION_SECRET || 'antarctica_secret_key_2566',
@@ -57,7 +56,8 @@ const css = `
   }
 
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0.6; }
-  
+  [data-theme="dark"] #bg-canvas { opacity: 0.3; }
+
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
   .glass { 
@@ -68,10 +68,11 @@ const css = `
     border-radius: 32px; 
   }
 
-  .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; flex-wrap: wrap; justify-content: center; }
+  .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; }
   .dock-btn { display: flex; align-items: center; justify-content: center; padding: 0 16px; height: 44px; border-radius: 12px; background: transparent; border: none; cursor: pointer; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 14px; font-weight: 500; text-decoration: none; }
-  .dock-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.05); }
-  .dock-btn.active { background: rgba(255,255,255,0.15); }
+  .dock-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+  [data-theme="dark"] .dock-btn:hover { background: rgba(255,255,255,0.1); }
+  .dock-btn.active { background: rgba(255,255,255,0.3); }
 
   .container { padding: 40px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
   .wide-container { max-width: 1100px; width: 100%; }
@@ -107,15 +108,15 @@ const css = `
   }
   .card:hover { transform: translateY(-4px) scale(1.01); }
   
-  .badge { display: inline-block; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px; background: rgba(255,255,255,0.1); color: var(--text); backdrop-filter: blur(5px); }
+  .badge { display: inline-block; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px; background: rgba(255,255,255,0.4); color: var(--text); backdrop-filter: blur(5px); }
   .badge.pending { color: var(--warning); border: 1px solid rgba(255,149,0,0.3); }
   .badge.approved { color: var(--success); border: 1px solid rgba(52,199,89,0.3); }
   .badge.rejected { color: var(--danger); border: 1px solid rgba(255,59,48,0.3); }
   .badge.taken { color: var(--accent); border: 1px solid rgba(0,122,255,0.3); }
   
   .action-bar { display: flex; gap: 8px; margin-top: 20px; }
-  .action-btn { display: flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 600; color: var(--text); }
-  .action-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+  .action-btn { display: flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.4); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 600; color: var(--text); }
+  .action-btn:hover { background: rgba(255,255,255,0.6); transform: scale(1.05); }
   
   .main-menu { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
   .menu-panel { padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border-radius: 28px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
@@ -136,33 +137,27 @@ const css = `
   .stat-val { font-size: 36px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
   .stat-lbl { font-size: 13px; color: var(--text-sec); font-weight: 500; }
 
-  .comments-box { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 13px; }
+  .comments-box { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.03); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 13px; }
+  [data-theme="dark"] .comments-box { background: rgba(255,255,255,0.03); }
   .announcement { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); padding: 24px; border-radius: 24px; margin-bottom: 24px; box-shadow: var(--glass-shadow); }
   
-  .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 16px; overflow: hidden; }
+  .progress-bar { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; margin-top: 16px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s; }
-  
-  .btn-danger { background: var(--danger); box-shadow: 0 4px 15px rgba(255,59,48,0.3); }
-  .btn-danger:hover { box-shadow: 0 8px 25px rgba(255,59,48,0.5); }
 `;
 
 const scripts = `
   <canvas id="bg-canvas"></canvas>
   <div id="preloader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;backdrop-filter:blur(10px);"><div class="title-container" id="title-container" style="display:flex;gap:2px;"></div></div>
-  <button class="dock" onclick="toggleTheme()" id="theme-btn" style="position:fixed; top:20px; right:20px; z-index:100; padding:12px; cursor:pointer; border:none; font-size:16px; font-weight:600;">Светлая</button>
+  <button class="dock" onclick="toggleTheme()" id="theme-btn" style="position:fixed; top:20px; right:20px; z-index:100; padding:12px; cursor:pointer; border:none; font-size:16px; font-weight:600;">Тема</button>
 
   <script>
     function toggleTheme() {
       const body = document.body;
-      const isLight = body.getAttribute('data-theme') === 'light';
-      body.setAttribute('data-theme', isLight ? '' : 'light');
-      localStorage.setItem('theme', isLight ? '' : 'light');
-      document.getElementById('theme-btn').textContent = isLight ? 'Светлая' : 'Темная';
+      const isDark = body.getAttribute('data-theme') === 'dark';
+      body.setAttribute('data-theme', isDark ? '' : 'dark');
+      localStorage.setItem('theme', isDark ? '' : 'dark');
     }
-    if (localStorage.getItem('theme') === 'light') {
-      document.body.setAttribute('data-theme', 'light');
-      document.getElementById('theme-btn').textContent = 'Темная';
-    }
+    if (localStorage.getItem('theme') !== 'light') document.body.setAttribute('data-theme', 'dark');
 
     if (!sessionStorage.getItem('preloaderShown')) {
       const titleText = "SURVIVAL IN ANTARCTICA";
@@ -199,8 +194,8 @@ const scripts = `
         if (dist < 150) { let force = (150 - dist) / 150; targetX -= (dx / dist) * force * 30; targetY -= (dy / dist) * force * 30; }
         cube.vx += (targetX - cube.x) * 0.05; cube.vy += (targetY - cube.y) * 0.05; cube.vx *= 0.8; cube.vy *= 0.8; cube.x += cube.vx; cube.y += cube.vy;
         
-        ctx.fillStyle = document.body.getAttribute('data-theme') === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'; 
-        ctx.strokeStyle = document.body.getAttribute('data-theme') === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'; 
+        ctx.fillStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'; 
+        ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'; 
         ctx.lineWidth = 1; ctx.beginPath(); 
         if (ctx.roundRect) ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 4); else ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
         ctx.fill(); ctx.stroke();
@@ -216,7 +211,7 @@ const renderDashboard = async (user, res, message = '') => {
   const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
   const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
 
-  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кабинет сотрудника</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
+  let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
     <div class="dock"><a href="/logout" class="dock-btn">Выйти</a><button class="dock-btn" onclick="document.getElementById('settings-modal').style.display='flex'">Настройки</button></div>
     <div style="text-align:center; margin-bottom:32px;"><h2 style="margin:0;">${user.name}</h2><p style="color:var(--text-sec); font-size:15px; margin-top:8px;">${user.role} · Очков: <b style="color:var(--warning);">${user.points}</b></p></div>
     ${message ? `<div class="alert" style="background:rgba(52,199,89,0.1); color:var(--success); border-color:rgba(52,199,89,0.2);">${message}</div>` : ''}
@@ -238,7 +233,21 @@ const renderDashboard = async (user, res, message = '') => {
       html += `</div>`;
     });
   }
-  html += `</div><div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); backdrop-filter:blur(20px); z-index:10000; justify-content:center; align-items:center;"><div class="card" style="max-width:400px; width:100%; position:relative; border-radius:32px;"><button class="action-btn" onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:20px; right:20px; padding:8px 12px;">Закрыть</button><h3 style="text-align:center; margin-bottom:24px;">Сменить пароль</h3><form action="/change-password" method="POST"><input type="password" name="old_password" placeholder="Старый пароль" required><input type="password" name="new_password" placeholder="Новый пароль" required><button type="submit" style="width:100%;">Обновить</button></form></div></div></div></div></body></html>`;
+  
+  // ИСПРАВЛЕННОЕ МОДАЛЬНОЕ ОКНО
+  html += `</div>
+  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="glass" style="max-width:400px; width:100%; padding:40px; position:relative;">
+      <button onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:15px; right:15px; background:transparent; border:none; color:var(--text-sec); font-size:14px; cursor:pointer; width:auto;">Закрыть</button>
+      <h3 style="text-align:center; margin-bottom:24px;">Сменить пароль</h3>
+      <form action="/change-password" method="POST">
+        <input type="password" name="old_password" placeholder="Старый пароль" required style="background:var(--input-bg); border:1px solid var(--glass-border);">
+        <input type="password" name="new_password" placeholder="Новый пароль" required style="background:var(--input-bg); border:1px solid var(--glass-border);">
+        <button type="submit" style="width:100%;">Обновить</button>
+      </form>
+    </div>
+  </div>
+  </div></body></html>`;
   res.send(html);
 };
 
@@ -489,7 +498,6 @@ app.post('/admin/worker/delete-forever', async (req, res) => {
   res.redirect(`/admin?pass=${pass}&tab=trash`);
 });
 
-// ДОБАВЛЕНО: Удаление объявления
 app.post('/admin/delete-announcement', async (req, res) => {
   const { id, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
