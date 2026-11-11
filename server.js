@@ -68,7 +68,7 @@ const css = `
     border-radius: 32px; 
   }
 
-  .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; }
+  .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; flex-wrap: wrap; justify-content: center; }
   .dock-btn { display: flex; align-items: center; justify-content: center; padding: 0 16px; height: 44px; border-radius: 12px; background: transparent; border: none; cursor: pointer; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 14px; font-weight: 500; text-decoration: none; }
   .dock-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
   [data-theme="dark"] .dock-btn:hover { background: rgba(255,255,255,0.1); }
@@ -207,7 +207,14 @@ const scripts = `
 `;
 
 const renderDashboard = async (user, res, message = '') => {
-  const { rows: tasks } = await pool.query(`SELECT * FROM tasks WHERE role = $1 AND status != 'Удалено' AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours') ORDER BY created_at DESC`, [user.role]);
+  const { rows: tasks } = await pool.query(`
+    SELECT * FROM tasks 
+    WHERE (role = $1 OR role = 'all' OR role = $2) 
+    AND status != 'Удалено' 
+    AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours') 
+    ORDER BY created_at DESC
+  `, [user.role, user.username]);
+  
   const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
   const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
 
@@ -218,7 +225,7 @@ const renderDashboard = async (user, res, message = '') => {
     ${announcement}
     <div class="grid">`;
   
-  if (tasks.length === 0) html += `<p style="text-align:center; color:var(--text-sec); grid-column: 1/-1; padding:40px;">Для вашего отдела пока нет активных задач.</p>`;
+  if (tasks.length === 0) html += `<p style="text-align:center; color:var(--text-sec); grid-column: 1/-1; padding:40px;">Для вас пока нет активных задач.</p>`;
   else {
     tasks.forEach((task, i) => {
       let badgeClass = 'pending', badgeText = 'Свободна'; let actionHtml = ''; let deadlineHtml = '';
@@ -228,13 +235,18 @@ const renderDashboard = async (user, res, message = '') => {
         if (task.taken_by === user.username) { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:16px;"><input type="hidden" name="task_id" value="${task.id}"><input type="file" name="proof" required style="padding:12px; font-size:14px; margin-bottom:12px; border-radius:16px;"><button type="submit" style="width:100%; background:var(--success); box-shadow:0 4px 15px rgba(52,199,89,0.3);">Отправить на проверку</button></form>`; }
         else { badgeClass = 'taken'; badgeText = 'В работе'; actionHtml = `<p style="color:var(--text-sec); font-size:14px; font-weight:500; padding-top:12px; border-top:1px solid var(--glass-border); margin-top:16px;">Взял: ${task.taken_by}</p>`; }
       } else if (task.status === 'Выполнено') { badgeClass = 'approved'; badgeText = 'На проверке'; actionHtml = `<p style="color:var(--success); font-size:14px; font-weight:500; padding-top:12px; border-top:1px solid var(--glass-border); margin-top:16px;">Сдал: ${task.taken_by}</p>`; }
-      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}"><span class="badge ${badgeClass}">${badgeText}</span><h3 style="margin-top:0; text-align:left;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:15px; margin-bottom:20px; line-height:1.5;">${task.description}</p>${actionHtml}`;
+      
+      let taskType = '';
+      if (task.role === 'all') taskType = '<span class="badge approved" style="background:rgba(52,199,89,0.2); border-color:rgba(52,199,89,0.5); color:var(--success);">Всем</span>';
+      else if (task.role === user.username) taskType = '<span class="badge" style="background:rgba(255,149,0,0.2); border-color:rgba(255,149,0,0.5); color:var(--warning);">Лично вам</span>';
+      else taskType = `<span class="badge pending">${task.role}</span>`;
+
+      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}">${taskType}<span class="badge ${badgeClass}">${badgeText}</span><h3 style="margin-top:0; text-align:left;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:15px; margin-bottom:20px; line-height:1.5;">${task.description}</p>${actionHtml}`;
       if (task.comments) html += `<div class="comments-box"><b>Чат:</b><br><span style="color:var(--text-sec)">${task.comments.replace(/\n/g, '<br>')}</span></div>`;
       html += `</div>`;
     });
   }
   
-  // ИСПРАВЛЕННОЕ МОДАЛЬНОЕ ОКНО
   html += `</div>
   <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
     <div class="glass" style="max-width:400px; width:100%; padding:40px; position:relative;">
@@ -354,6 +366,9 @@ app.get('/admin', async (req, res) => {
   try { 
     const stats = await pool.query(`SELECT (SELECT COUNT(*) FROM applications WHERE status = 'Одобрено' AND is_deleted = false) as workers, (SELECT COUNT(*) FROM applications WHERE status = 'На рассмотрении' AND is_deleted = false) as new_apps, (SELECT COUNT(*) FROM tasks WHERE status = 'В работе') as in_work, (SELECT COUNT(*) FROM tasks WHERE status = 'Выполнено') as on_review`); 
     const s = stats.rows[0]; 
+    
+    const { rows: allWorkers } = await pool.query("SELECT username, name FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY name ASC");
+    
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Админ-панель</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
     <div class="dock">
       <a href="/admin?pass=${pass}&tab=dash" class="dock-btn ${tab === 'dash' ? 'active' : ''}">Обзор</a>
@@ -389,11 +404,46 @@ app.get('/admin', async (req, res) => {
     // 3. ЗАДАЧИ
     else if (tab === 'tasks') {
       const { rows: tasksList } = await pool.query("SELECT * FROM tasks WHERE status != 'Удалено' ORDER BY created_at DESC");
-      html += `<div class="card animate-in"><h3 style="text-align:left;">Создать задачу</h3><form action="/admin/task/add" method="POST" style="margin-top:20px;"><input type="hidden" name="pass" value="${pass}"><input name="title" placeholder="Название задачи" required><textarea name="description" placeholder="Описание задачи..." rows="3" required></textarea><select name="role" required><option value="" disabled selected hidden>Отдел (роль)</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input type="datetime-local" name="deadline" style="color-scheme:dark;"><button type="submit">Создать задачу</button></form></div>`;
+      
+      let workerOptions = allWorkers.map(w => `<option value="${w.username}">${w.name} (${w.username})</option>`).join('');
+      
+      html += `<div class="card animate-in"><h3 style="text-align:left;">Создать задачу</h3>
+      <form action="/admin/task/add" method="POST" style="margin-top:20px;">
+        <input type="hidden" name="pass" value="${pass}">
+        <input name="title" placeholder="Название задачи" required>
+        <textarea name="description" placeholder="Описание задачи..." rows="3" required></textarea>
+        
+        <select name="target" required style="margin-bottom:8px;">
+          <option value="" disabled selected hidden>Кому выдать задачу?</option>
+          <option value="all" style="font-weight:bold; color:var(--success);">🌐 Всем сотрудникам</option>
+          <optgroup label="Отделу (Роли)">
+            <option value="Билдер">Билдеры</option>
+            <option value="Скриптер">Скриптеры</option>
+            <option value="GUI-дизайнер">GUI-дизайнеры</option>
+            <option value="Аниматор">Аниматоры</option>
+            <option value="Тестер">Тестеры</option>
+          </optgroup>
+          <optgroup label="Лично сотруднику">
+            ${workerOptions}
+          </optgroup>
+        </select>
+
+        <input type="datetime-local" name="deadline" style="color-scheme:dark;">
+        <button type="submit">Создать задачу</button>
+      </form></div>`;
+      
       html += `<h3 style="text-align:left; margin-top:32px;">Список задач</h3>`;
       tasksList.forEach(t => {
         let proofBlock = t.proof_file ? `<a href="${t.proof_file}" download="${t.proof_filename || 'proof'}" class="action-btn" style="margin-top:12px; background:var(--accent); color:#fff;">Скачать отчет (${t.proof_filename || 'файл'})</a>` : '';
-        html += `<div class="card"><span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span><h3 style="text-align:left; margin-top:0;">${t.title}</h3><p style="color:var(--text-sec);">${t.description}</p><p><b>Отдел:</b> ${t.role} | <b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>${proofBlock}`;
+        
+        let targetLabel = t.role;
+        if (t.role === 'all') targetLabel = '🌐 Всем';
+        else if (!['Билдер', 'Скриптер', 'GUI-дизайнер', 'Аниматор', 'Тестер'].includes(t.role)) {
+           const w = allWorkers.find(x => x.username === t.role);
+           if (w) targetLabel = `👤 Лично: ${w.name}`;
+        }
+
+        html += `<div class="card"><span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span><span class="badge" style="margin-left:8px; background:transparent;">${targetLabel}</span><h3 style="text-align:left; margin-top:0;">${t.title}</h3><p style="color:var(--text-sec);">${t.description}</p><p><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>${proofBlock}`;
         if (t.status === 'Выполнено') {
           html += `<div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--success);">Принять (+очки)</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" style="background:var(--danger);">На доработку</button></form></div>`;
         }
@@ -411,13 +461,30 @@ app.get('/admin', async (req, res) => {
       });
     }
 
-    // 5. СОТРУДНИКИ
+    // 5. СОТРУДНИКИ (ПОЛНАЯ ИНФА)
     else if (tab === 'workers') {
       const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY role ASC");
       html += `<h3 style="text-align:left;">Активные сотрудники (${workers.length})</h3>`;
       if (workers.length === 0) html += `<p style="color:var(--text-sec);">Пока никого нет.</p>`;
+      
       workers.forEach(w => {
-        html += `<div class="worker-row"><div><p style="margin:0; font-size:16px; font-weight:600;"><b>${w.name}</b> (${w.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:13px;">Логин: ${w.username} | Очки: ${w.points}</p></div><form action="/admin/worker/fire" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${w.id}"><button type="submit" style="background:var(--danger); padding:10px 16px; font-size:13px; width:auto;">Уволить</button></form></div>`;
+        html += `<div class="worker-row" style="align-items: flex-start;">
+          <div>
+            <p style="margin:0; font-size:16px; font-weight:600;"><b>${w.name}</b> (${w.role})</p>
+            <p style="margin:8px 0 0 0; font-size:13px; color:var(--text-sec); line-height:1.6;">
+              <b>Город:</b> ${w.location} <br>
+              <b>Discord:</b> ${w.discord} <br>
+              <b>TG:</b> ${w.telegram || 'Нет'} <br>
+              <b>Roblox:</b> ${w.roblox_nick} <br>
+              <b>Логин:</b> ${w.username} | <b>Очки:</b> ${w.points}
+            </p>
+          </div>
+          <form action="/admin/worker/fire" method="POST" style="margin-top: 4px;">
+            <input type="hidden" name="pass" value="${pass}">
+            <input type="hidden" name="id" value="${w.id}">
+            <button type="submit" style="background:var(--danger); padding:10px 16px; font-size:13px; width:auto;">Уволить</button>
+          </form>
+        </div>`;
       });
     }
 
@@ -446,8 +513,8 @@ app.post('/admin/announcement', async (req, res) => {
 });
 
 app.post('/admin/task/add', async (req, res) => {
-  const { pass, title, description, role, deadline } = req.body;
-  await pool.query('INSERT INTO tasks (title, description, role, deadline, status) VALUES ($1, $2, $3, $4, $5)', [title, description, role, deadline || null, 'Свободна']);
+  const { pass, title, description, target, deadline } = req.body;
+  await pool.query('INSERT INTO tasks (title, description, role, deadline, status) VALUES ($1, $2, $3, $4, $5)', [title, description, target, deadline || null, 'Свободна']);
   res.redirect(`/admin?pass=${pass}&tab=tasks`);
 });
 
