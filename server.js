@@ -54,12 +54,10 @@ const css = `
   #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
-  /* Контейнеры по бокам */
-  .chat-side { position: fixed; top: 0; height: 100vh; width: 280px; z-index: 1; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 20px; }
+  .chat-side { position: fixed; top: 0; height: 100vh; width: 280px; z-index: 1; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 20px; padding-bottom: 40px; }
   .chat-side.left { left: 0; align-items: flex-start; }
   .chat-side.right { right: 0; align-items: flex-end; }
 
-  /* Стиль пузыря Telegram */
   .tg-bubble { 
     background: rgba(135, 116, 225, 0.95); 
     color: #ffffff; 
@@ -74,7 +72,7 @@ const css = `
     width: fit-content;
     max-width: 240px;
     opacity: 0;
-    animation: floatMsg 12s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: floatMsg 6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
 
   .chat-side.left .tg-bubble { border-bottom-left-radius: 4px; }
@@ -89,9 +87,9 @@ const css = `
 
   @keyframes floatMsg {
     0% { opacity: 0; transform: translateY(20px) scale(0.9); }
-    15% { opacity: 1; transform: translateY(0) scale(1); }
-    85% { opacity: 1; transform: translateY(-20px) scale(1); }
-    100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+    10% { opacity: 1; transform: translateY(0) scale(1); }
+    85% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-20px) scale(0.9); }
   }
 
   @media (max-width: 900px) { .chat-side { display: none; } }
@@ -197,7 +195,6 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     });
 
-    // --- ГЕНЕРАТОР СООБЩЕНИЙ ---
     const chatLeft = document.getElementById('chat-left');
     const chatRight = document.getElementById('chat-right');
     
@@ -212,14 +209,21 @@ const scripts = `
       "Ми быстро убираем баги",
       "Режим выживания в Антарктиде готов",
       "Подколи не стоило прыгать в сугроб...",
-      "Фикс готов, деплой прошел успешно",
-      "Пофиксили вылет на карте выживания",
-      "Оптимизировали FPS до 120",
-      "QA проверил, багов в Антарктиде нет",
-      "Добавили новые механики замерзания",
-      "Исправили баг с сугробами",
-      "Снежная буря теперь работает реалистично",
-      "Скорость загрузки выросла на 40%"
+      "Фикс готов, деплой прошел",
+      "Опять кто-то сломал сборку?",
+      "Я нашел баг, но он меня нашел первым",
+      "Кофе закончился, баги остались",
+      "Пофиксили вылет на карте",
+      "Кто забыл закрыть фигурную скобку?",
+      "QA проверил, багов нет",
+      "Добавили механики замерзания",
+      "Работаем, не отвлекаемся!",
+      "Снежная буря работает реалистично",
+      "Ура, релиз прошел успешно!",
+      "Скорость выросла на 40%",
+      "Пинг 20, все летает",
+      "Еще один фикс и спать",
+      "Код ревью пройдено, мержим"
     ];
 
     function createMessage() {
@@ -249,13 +253,13 @@ const scripts = `
 
       setTimeout(() => {
         if (el.parentNode) el.remove();
-      }, 12000);
+      }, 6000);
     }
 
     setTimeout(() => {
       createMessage();
-      setInterval(createMessage, 2500);
-    }, 1000);
+      setInterval(createMessage, 1500);
+    }, 500);
   </script>
 `;
 
