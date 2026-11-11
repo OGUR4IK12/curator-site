@@ -15,41 +15,72 @@ app.use(express.urlencoded({ extended: true }));
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
   
-  /* Стили для прелоадера (начальной анимации) */
+  /* --- ПРЕЛОАДЕР --- */
   #preloader {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: #000;
     z-index: 9999;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
+    transition: opacity 1s ease, visibility 1s ease;
+    overflow: hidden;
   }
   #preloader.hidden { opacity: 0; visibility: hidden; }
-  
-  .preloader-text {
-    color: #fff;
-    font-size: clamp(24px, 5vw, 64px);
-    font-weight: 800;
-    letter-spacing: -1px;
-    text-align: center;
-    overflow: hidden; /* Скрываем текст до анимации */
+
+  .title-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    display: flex;
+    gap: 2px;
   }
   
-  /* Разбиваем текст на буквы для анимации */
-  .preloader-text span {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(100%);
-    animation: revealText 1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-  }
-  
-  @keyframes revealText {
-    0% { opacity: 0; transform: translateY(100%); }
-    100% { opacity: 1; transform: translateY(0); }
+  /* Поднимаем текст выше после сборки */
+  .title-container.move-up {
+    transform: translate(-50%, -120%);
   }
 
+  .letter {
+    color: #fff;
+    font-size: clamp(24px, 5vw, 56px);
+    font-weight: 800;
+    display: inline-block;
+    opacity: 0;
+    /* Стартовые позиции для разлета из углов */
+    transform: translate(var(--startX), var(--startY)) scale(0.5) rotate(var(--startRot));
+    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.2s ease;
+  }
+
+  .letter.assembled {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+
+  .subtitle {
+    position: absolute;
+    bottom: 40%;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: all 1s ease;
+  }
+
+  .subtitle.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* --- ОСНОВНОЙ САЙТ --- */
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
   
   body { 
@@ -139,30 +170,66 @@ const css = `
 const scripts = `
   <!-- Прелоадер -->
   <div id="preloader">
-    <div class="preloader-text" id="text-container"></div>
+    <div class="title-container" id="title-container"></div>
+    <div class="subtitle" id="subtitle">SUBMIT APPLICATION</div>
   </div>
 
   <canvas id="bg-canvas"></canvas>
   
   <script>
-    // 1. Анимация текста
-    const text = "survival in Antarctica";
-    const container = document.getElementById('text-container');
+    // 1. ЛОГИКА ПРЕЛОАДЕРА
+    const titleText = "SURVIVAL IN ANTARCTICA";
+    const container = document.getElementById('title-container');
     
-    // Разбиваем на буквы и создаем span для каждой
-    text.split('').forEach((char, index) => {
-      const span = document.createElement('span');
-      span.textContent = char === ' ' ? '\\u00A0' : char; // Пробел
-      span.style.animationDelay = (index * 0.05) + 's'; // Задержка для каждой буквы
-      container.appendChild(span);
+    // Разбиваем текст на буквы
+    titleText.split('').forEach((char, index) => {
+      if (char === ' ') {
+        // Делаем пробел
+        const space = document.createElement('span');
+        space.innerHTML = '&nbsp;';
+        container.appendChild(space);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.className = 'letter';
+        
+        // Генерируем случайные координаты для старта из углов/краев экрана
+        const randomX = (Math.random() - 0.5) * window.innerWidth * 1.5;
+        const randomY = (Math.random() - 0.5) * window.innerHeight * 1.5;
+        const randomRot = (Math.random() - 0.5) * 180;
+        
+        span.style.setProperty('--startX', randomX + 'px');
+        span.style.setProperty('--startY', randomY + 'px');
+        span.style.setProperty('--startRot', randomRot + 'deg');
+        
+        container.appendChild(span);
+      }
     });
 
-    // Убираем прелоадер через 3 секунды
+    // Запускаем анимацию сбора букв с задержкой
+    setTimeout(() => {
+      document.querySelectorAll('.letter').forEach((letter, index) => {
+        // Небольшая случайная задержка для каждой буквы, чтобы они слетались хаотично
+        setTimeout(() => {
+          letter.classList.add('assembled');
+        }, index * 30);
+      });
+    }, 100);
+
+    // Через 2 секунды после сборки поднимаем текст и показываем подзаголовок
+    setTimeout(() => {
+      document.getElementById('title-container').classList.add('move-up');
+      document.getElementById('subtitle').classList.add('show');
+    }, 2000);
+
+    // Через 4 секунды полностью убираем прелоадер
     setTimeout(() => {
       document.getElementById('preloader').classList.add('hidden');
-    }, 3000);
+      // Удаляем прелоадер из DOM через секунду после скрытия, чтобы не мешал
+      setTimeout(() => document.getElementById('preloader').remove(), 1000); 
+    }, 4000);
 
-    // 2. Желейные кубики на фоне
+    // 2. ЖЕЛЕЙНЫЕ КУБИКИ
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height;
