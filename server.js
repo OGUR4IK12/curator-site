@@ -60,30 +60,36 @@ const css = `
   /* Стиль пузыря Telegram */
   .tg-bubble { 
     position: absolute; 
-    background: #8774e1; 
+    background: rgba(135, 116, 225, 0.95); 
     color: #ffffff; 
-    padding: 8px 12px; 
-    border-radius: 16px; 
+    padding: 12px 16px; 
+    border-radius: 18px; 
     border-bottom-right-radius: 4px; 
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
     font-size: 14px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
     display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    white-space: nowrap;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 280px;
     opacity: 0;
-    animation: floatMsg 15s linear forwards;
+    animation: floatMsg 16s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
   }
 
-  .tg-meta { display: flex; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.7); }
+  .tg-header { display: flex; align-items: center; gap: 8px; }
+  .tg-avatar { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
+  .tg-name { font-size: 12px; font-weight: 600; color: #fff; }
+  .tg-text { font-size: 14px; line-height: 1.4; font-weight: 500; }
+  .tg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px; }
   .tg-checks { color: #ffffff; font-weight: bold; letter-spacing: -2px; }
 
   @keyframes floatMsg {
-    0% { opacity: 0; transform: translateY(50px) scale(0.9); }
-    10% { opacity: 0.7; transform: translateY(0) scale(1); }
-    80% { opacity: 0.7; transform: translateY(-50px) scale(1); }
-    100% { opacity: 0; transform: translateY(-100px) scale(0.9); }
+    0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+    10% { opacity: 1; transform: translateY(0) scale(1); }
+    85% { opacity: 1; transform: translateY(-30px) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
   }
 
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
@@ -185,36 +191,55 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     });
 
-    // --- ГЕНЕРАТОР TELEGRAM ПУЗЫРЕЙ НА ФОНЕ ---
+    // --- ГЕНЕРАТОР СООБЩЕНИЙ (СБОКУ ОТ МЕНЮ) ---
     const chatBg = document.getElementById('chat-bg');
+    
+    const team = [
+      { name: 'Антон', role: 'Разработчик', color: '#ff453a', initial: 'А' },
+      { name: 'Маша', role: 'QA Тестер', color: '#32d74b', initial: 'М' },
+      { name: 'Иван', role: 'Лидер', color: '#0a84ff', initial: 'И' },
+      { name: 'Оля', role: 'Дизайнер', color: '#ff9f0a', initial: 'О' }
+    ];
+
     const messages = [
+      "Режим выживания в Антарктиде готов на 80%",
       "Ми быстро убираем баги",
-      "Фикс готов, деплой прошел",
-      "Пофиксили вылет на карте",
+      "Фикс готов, деплой прошел успешно",
+      "Пофиксили вылет на карте выживания",
       "Оптимизировали FPS до 120",
-      "QA проверил, багов нет",
+      "QA проверил, багов в Антарктиде нет",
       "Задеплоили новый хотфикс",
-      "Работаем над стабильностью",
-      "Исправили баг с инвентарем",
-      "Все системы в норме",
-      "Скорость выросла на 40%"
+      "Добавили новые механики замерзания",
+      "Исправили баг с сугробами",
+      "Скорость загрузки выросла на 40%"
     ];
 
     function createMessage() {
       const el = document.createElement('div');
       el.className = 'tg-bubble';
       
+      const user = team[Math.floor(Math.random() * team.length)];
       const text = messages[Math.floor(Math.random() * messages.length)];
       const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       
-      const topPos = Math.random() * 70 + 10;
-      const leftPos = Math.random() * 60 + 10;
+      const isLeft = Math.random() > 0.5;
+      const topPos = Math.random() * 60 + 20;
       
+      if (isLeft) {
+        el.style.left = (Math.random() * 15 + 5) + '%';
+        el.style.borderBottomRightRadius = '18px';
+        el.style.borderBottomLeftRadius = '4px';
+      } else {
+        el.style.right = (Math.random() * 15 + 5) + '%';
+      }
       el.style.top = topPos + '%';
-      el.style.left = leftPos + '%';
 
       el.innerHTML = 
-        text + 
+        '<div class="tg-header">' +
+          '<div class="tg-avatar" style="color: ' + user.color + ';">' + user.initial + '</div>' +
+          '<div class="tg-name">' + user.name + '</div>' +
+        '</div>' +
+        '<div class="tg-text">' + text + '</div>' +
         '<div class="tg-meta">' + 
           time + ' <span class="tg-checks">✓✓</span>' + 
         '</div>';
@@ -223,12 +248,12 @@ const scripts = `
 
       setTimeout(() => {
         if (el.parentNode) el.remove();
-      }, 15000);
+      }, 16000);
     }
 
     setTimeout(() => {
       createMessage();
-      setInterval(createMessage, 2500);
+      setInterval(createMessage, 3000);
     }, 1000);
   </script>
 `;
