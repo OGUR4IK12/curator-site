@@ -31,13 +31,13 @@ const css = `
   
   :root {
     --text: #ffffff; --text-sec: #8e8e93; --bg: #09090b;
-    --card-bg: #18181b; --border: #27272a;
+    --card-bg: rgba(24, 24, 27, 0.85); --border: #27272a;
     --accent: #ffffff; --danger: #ff453a; --success: #32d74b; --warning: #ff9f0a; --blue: #0a84ff;
   }
   
   [data-theme="light"] {
     --text: #09090b; --text-sec: #52525b; --bg: #f4f4f5;
-    --card-bg: #ffffff; --border: #e4e4e7;
+    --card-bg: rgba(255, 255, 255, 0.85); --border: #e4e4e7;
     --accent: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --blue: #007aff;
   }
 
@@ -49,15 +49,28 @@ const css = `
     background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
     background-size: 50px 50px;
     background-position: center center;
+    overflow-x: hidden;
   }
 
   /* Свечение за курсором */
   #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
+  /* Фоновый чат */
+  #chat-bg { position: fixed; bottom: 0; right: 20px; width: 300px; height: 400px; z-index: 1; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; opacity: 0.6; mask-image: linear-gradient(to bottom, transparent, black 20%, black 100%); -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 100%); }
+  .chat-msg { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 12px; color: var(--text); backdrop-filter: blur(5px); animation: chatPop 0.3s ease-out, chatFade 8s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .chat-msg .author { font-weight: 700; color: var(--blue); margin-bottom: 4px; display: block; font-size: 11px; }
+  .chat-msg.system { border-color: var(--success); }
+  .chat-msg.system .author { color: var(--success); }
+  .chat-msg.bug { border-color: var(--danger); }
+  .chat-msg.bug .author { color: var(--danger); }
+
+  @keyframes chatPop { from { transform: translateY(20px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+  @keyframes chatFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
-  .glass { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .glass { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); backdrop-filter: blur(12px); }
   
   .container { padding: 40px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
   .wide-container { max-width: 1100px; width: 100%; }
@@ -65,7 +78,6 @@ const css = `
   h1, h2, h3 { text-align: center; color: var(--text); margin-bottom: 24px; font-weight: 700; letter-spacing: -0.03em; }
   h1 { font-size: 32px; } h2 { font-size: 24px; } h3 { font-size: 18px; }
 
-  /* Строгие анимации */
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   .animate-in { animation: slideUp 0.5s ease forwards; opacity: 0; }
   .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; } .delay-3 { animation-delay: 0.3s; }
@@ -90,7 +102,7 @@ const css = `
   .card { 
     padding: 24px; border-radius: 12px; margin-bottom: 16px; 
     background: var(--card-bg); border: 1px solid var(--border); 
-    transition: border-color 0.2s, transform 0.2s; position: relative; 
+    transition: border-color 0.2s, transform 0.2s; position: relative; backdrop-filter: blur(10px);
   }
   .card:hover { border-color: var(--text-sec); transform: translateY(-2px); }
   
@@ -105,7 +117,7 @@ const css = `
   .action-btn:hover { border-color: var(--text); }
   
   .main-menu { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
-  .menu-panel { padding: 32px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--text); transition: all 0.2s; cursor: pointer; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); }
+  .menu-panel { padding: 32px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--text); transition: all 0.2s; cursor: pointer; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); }
   .menu-panel:hover { border-color: var(--text-sec); transform: translateY(-2px); }
   .menu-panel h2 { font-size: 20px; margin-bottom: 8px; text-align: left; }
   .menu-panel p { color: var(--text-sec); font-size: 14px; margin-bottom: 0; }
@@ -115,16 +127,16 @@ const css = `
   .admin-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
   @media (min-width: 900px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
   
-  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: var(--card-bg); border: 1px solid var(--border); }
+  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); }
   
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
   @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
-  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; backdrop-filter: blur(10px); }
   .stat-val { font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
   .stat-lbl { font-size: 12px; color: var(--text-sec); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
   .comments-box { margin-top: 16px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-  .announcement { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid var(--blue); }
+  .announcement { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid var(--blue); backdrop-filter: blur(10px); }
   
   .progress-bar { width: 100%; height: 6px; background: var(--bg); border-radius: 3px; margin-top: 16px; overflow: hidden; border: 1px solid var(--border); }
   .progress-fill { height: 100%; background: var(--text); border-radius: 3px; transition: width 0.5s; }
@@ -132,11 +144,12 @@ const css = `
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-success { background: var(--success); color: #fff; }
 
-  .theme-toggle { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; font-size: 16px; }
+  .theme-toggle { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; font-size: 16px; backdrop-filter: blur(10px); }
 `;
 
 const scripts = `
   <div id="cursor-glow"></div>
+  <div id="chat-bg"></div>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
   <script>
@@ -153,6 +166,43 @@ const scripts = `
       glow.style.left = e.clientX + 'px';
       glow.style.top = e.clientY + 'px';
     });
+
+    // --- ЛОГИКА ФОНОВОГО ЧАТА ---
+    const chatBg = document.getElementById('chat-bg');
+    const messages = [
+      { author: 'dev_anton', text: 'Задеплоил фикс для бага с UI, проверьте', type: 'system' },
+      { author: 'qa_masha', text: 'Нашла новый баг: при клике на кнопку вылетает ошибка', type: 'bug' },
+      { author: 'lead_ivan', text: 'Принял задачу, начинаю работать над рендером', type: '' },
+      { author: 'dev_anton', text: 'Пофиксил баг с отображением, всё работает', type: 'system' },
+      { author: 'qa_masha', text: 'Проверила, теперь всё ок. Можно мержить', type: '' },
+      { author: 'designer_olga', text: 'Обновила макет главной страницы, посмотрите в Figma', type: '' },
+      { author: 'lead_ivan', text: 'Созвон через 10 минут, обсуждаем релиз', type: '' },
+      { author: 'dev_anton', text: 'Начал работу над оптимизацией задач', type: '' }
+    ];
+
+    let msgIndex = 0;
+
+    function createMessage() {
+      const msgData = messages[msgIndex % messages.length];
+      msgIndex++;
+
+      const msgEl = document.createElement('div');
+      msgEl.className = 'chat-msg ' + msgData.type;
+      msgEl.innerHTML = '<span class="author">' + msgData.author + '</span>' + msgData.text;
+
+      chatBg.appendChild(msgEl);
+
+      // Удаляем старое сообщение через 8 секунд (когда закончится анимация)
+      setTimeout(() => {
+        if (msgEl.parentNode) msgEl.remove();
+      }, 8000);
+    }
+
+    // Запускаем чат (первое сообщение через 1 сек, потом каждые 3 сек)
+    setTimeout(() => {
+      createMessage();
+      setInterval(createMessage, 3500);
+    }, 1000);
   </script>
 `;
 
