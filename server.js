@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 10000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2566'; // Твой пароль
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2566';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -13,7 +13,6 @@ const pool = new Pool({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// Настройка сессий (хранение входа на 30 дней)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'antarctica_secret_key_2566',
   resave: false,
@@ -40,98 +39,60 @@ const css = `
   }
 
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
-  
-  body { 
-    margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; 
-  }
-
+  body { margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; }
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0.6; }
   [data-theme="dark"] #bg-canvas { opacity: 0.3; }
-
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
-
-  .glass { 
-    background: var(--glass-bg); 
-    backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%); 
-    border: 1px solid var(--glass-border); 
-    box-shadow: var(--glass-shadow); 
-    border-radius: 32px; 
-  }
-
+  .glass { background: var(--glass-bg); backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); border-radius: 32px; }
   .dock { display: flex; gap: 8px; padding: 8px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: var(--glass-shadow); width: fit-content; margin: 0 auto 32px auto; flex-wrap: wrap; justify-content: center; }
   .dock-btn { display: flex; align-items: center; justify-content: center; padding: 0 16px; height: 44px; border-radius: 12px; background: transparent; border: none; cursor: pointer; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 14px; font-weight: 500; text-decoration: none; }
   .dock-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
   [data-theme="dark"] .dock-btn:hover { background: rgba(255,255,255,0.1); }
   .dock-btn.active { background: rgba(255,255,255,0.3); }
-
   .container { padding: 40px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
   .wide-container { max-width: 1100px; width: 100%; }
-  
   h1, h2, h3 { text-align: center; color: var(--text); margin-bottom: 16px; font-weight: 600; letter-spacing: -0.04em; }
-  
   @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
   .animate-in { animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
   .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; } .delay-3 { animation-delay: 0.3s; }
-
-  input, select, textarea { 
-    width: 100%; padding: 16px; margin-bottom: 16px; 
-    background: rgba(255,255,255,0.3); border: 1px solid var(--glass-border); border-radius: 16px; 
-    font-size: 15px; color: var(--text); outline: none; backdrop-filter: blur(10px);
-  }
+  input, select, textarea { width: 100%; padding: 16px; margin-bottom: 16px; background: rgba(255,255,255,0.3); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 15px; color: var(--text); outline: none; backdrop-filter: blur(10px); }
   [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: rgba(0,0,0,0.2); }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); background: rgba(255,255,255,0.5); }
-  
   button { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(0,122,255,0.3); }
   button:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 25px rgba(0,122,255,0.4); }
   button:active { transform: scale(0.98); }
-
   .link { text-align: center; margin-top: 24px; font-size: 14px; }
   .link a { color: var(--text-sec); text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: var(--text); }
-  
   .alert { padding: 16px; border-radius: 16px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(255,59,48,0.1); color: var(--danger); border: 1px solid rgba(255,59,48,0.2); backdrop-filter: blur(10px); }
-  
-  .card { 
-    padding: 24px; border-radius: 24px; margin-bottom: 16px; 
-    background: var(--glass-bg); backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; 
-  }
+  .card { padding: 24px; border-radius: 24px; margin-bottom: 16px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
   .card:hover { transform: translateY(-4px) scale(1.01); }
-  
   .badge { display: inline-block; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px; background: rgba(255,255,255,0.4); color: var(--text); backdrop-filter: blur(5px); }
   .badge.pending { color: var(--warning); border: 1px solid rgba(255,149,0,0.3); }
   .badge.approved { color: var(--success); border: 1px solid rgba(52,199,89,0.3); }
   .badge.rejected { color: var(--danger); border: 1px solid rgba(255,59,48,0.3); }
   .badge.taken { color: var(--accent); border: 1px solid rgba(0,122,255,0.3); }
-  
   .action-bar { display: flex; gap: 8px; margin-top: 20px; }
   .action-btn { display: flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.4); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 600; color: var(--text); }
   .action-btn:hover { background: rgba(255,255,255,0.6); transform: scale(1.05); }
-  
   .main-menu { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
   .menu-panel { padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: var(--text); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border-radius: 28px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
   .menu-panel:hover { transform: translateY(-6px) scale(1.02); }
   .menu-panel h2 { font-size: 22px; margin-bottom: 8px; }
   .menu-panel p { color: var(--text-sec); font-size: 15px; margin-bottom: 0; }
-
   .grid { display: grid; grid-template-columns: 1fr; gap: 16px; } 
   @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
   .admin-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
   @media (min-width: 900px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
-  
   .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); transition: all 0.2s; }
-  
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
   @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
   .stat-card { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); padding: 24px; border-radius: 24px; text-align: center; box-shadow: var(--glass-shadow); }
   .stat-val { font-size: 36px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
   .stat-lbl { font-size: 13px; color: var(--text-sec); font-weight: 500; }
-
   .comments-box { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.03); border: 1px solid var(--glass-border); border-radius: 16px; font-size: 13px; }
   [data-theme="dark"] .comments-box { background: rgba(255,255,255,0.03); }
   .announcement { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); padding: 24px; border-radius: 24px; margin-bottom: 24px; box-shadow: var(--glass-shadow); }
-  
   .progress-bar { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; margin-top: 16px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s; }
 `;
@@ -140,7 +101,6 @@ const scripts = `
   <canvas id="bg-canvas"></canvas>
   <div id="preloader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;backdrop-filter:blur(10px);"><div class="title-container" id="title-container" style="display:flex;gap:2px;"></div></div>
   <button class="dock" onclick="toggleTheme()" id="theme-btn" style="position:fixed; top:20px; right:20px; z-index:100; padding:12px; cursor:pointer; border:none; font-size:16px; font-weight:600;">Тема</button>
-
   <script>
     function toggleTheme() {
       const body = document.body;
@@ -148,8 +108,7 @@ const scripts = `
       body.setAttribute('data-theme', isDark ? '' : 'dark');
       localStorage.setItem('theme', isDark ? '' : 'dark');
     }
-    // Темная тема по умолчанию
-    if (localStorage.getItem('theme') !== 'light') document.body.setAttribute('data-theme', 'dark');
+    if (localStorage.getItem('theme') === 'dark') document.body.setAttribute('data-theme', 'dark');
 
     if (!sessionStorage.getItem('preloaderShown')) {
       const titleText = "SURVIVAL IN ANTARCTICA";
@@ -170,13 +129,10 @@ const scripts = `
     const ctx = canvas.getContext('2d');
     let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
     const spacing = 60, cubeSize = 20;
-
     function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initCubes(); }
     function initCubes() { cubes = []; for (let x = spacing/2; x < width; x += spacing) { for (let y = spacing/2; y < height; y += spacing) { cubes.push({ x, y, baseX: x, baseY: y, vx: 0, vy: 0, phase: Math.random() * Math.PI * 2, speed: 0.001 + Math.random() * 0.002 }); } } }
-    
     window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
     window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
-
     function animate(time) {
       ctx.clearRect(0, 0, width, height);
       cubes.forEach(cube => {
@@ -185,7 +141,6 @@ const scripts = `
         let dx = mouse.x - cube.x, dy = mouse.y - cube.y, dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 150) { let force = (150 - dist) / 150; targetX -= (dx / dist) * force * 30; targetY -= (dy / dist) * force * 30; }
         cube.vx += (targetX - cube.x) * 0.05; cube.vy += (targetY - cube.y) * 0.05; cube.vx *= 0.8; cube.vy *= 0.8; cube.x += cube.vx; cube.y += cube.vy;
-        
         ctx.fillStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'; 
         ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'; 
         ctx.lineWidth = 1; ctx.beginPath(); 
@@ -203,7 +158,7 @@ const renderDashboard = async (user, res, message = '') => {
   const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
   const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
 
-  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кабинет сотрудника</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кабинет</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
     <div class="dock"><a href="/logout" class="dock-btn">Выйти</a><button class="dock-btn" onclick="document.getElementById('settings-modal').style.display='flex'">Настройки</button></div>
     <div style="text-align:center; margin-bottom:32px;"><h2 style="margin:0;">${user.name}</h2><p style="color:var(--text-sec); font-size:15px; margin-top:8px;">${user.role} · Очков: <b style="color:var(--warning);">${user.points}</b></p></div>
     ${message ? `<div class="alert" style="background:rgba(52,199,89,0.1); color:var(--success); border-color:rgba(52,199,89,0.2);">${message}</div>` : ''}
@@ -385,10 +340,12 @@ app.get('/admin', async (req, res) => {
       });
     }
 
-    // 5. СОТРУДНИКИ
+    // 5. СОТРУДНИКИ (ПОКАЗЫВАЕМ ВСЕХ ОДОБРЕННЫХ)
     else if (tab === 'workers') {
-      const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false");
-      html += `<h3 style="text-align:left;">Активные сотрудники</h3>`;
+      // ИСПРАВЛЕНО: Выводим всех, у кого статус Одобрено и они не удалены
+      const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY role ASC");
+      html += `<h3 style="text-align:left;">Активные сотрудники (${workers.length})</h3>`;
+      if (workers.length === 0) html += `<p style="color:var(--text-sec);">Пока никого нет.</p>`;
       workers.forEach(w => {
         html += `<div class="worker-row"><div><p style="margin:0; font-size:16px; font-weight:600;"><b>${w.name}</b> (${w.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:13px;">Логин: ${w.username} | Очки: ${w.points}</p></div><form action="/admin/worker/fire" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${w.id}"><button type="submit" style="background:var(--danger); padding:10px 16px; font-size:13px; width:auto;">Уволить</button></form></div>`;
       });
@@ -465,7 +422,6 @@ app.post('/admin/worker/restore', async (req, res) => {
   res.redirect(`/admin?pass=${pass}&tab=trash`);
 });
 
-// ПОЛНОЕ УДАЛЕНИЕ ИЗ БАЗЫ (освобождает логин)
 app.post('/admin/worker/delete-forever', async (req, res) => {
   const { pass, id } = req.body;
   await pool.query("DELETE FROM applications WHERE id = $1", [id]);
