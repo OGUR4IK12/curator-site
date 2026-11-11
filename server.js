@@ -54,43 +54,47 @@ const css = `
   #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
-  /* Контейнер для фоновых сообщений */
-  #chat-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; overflow: hidden; }
-  
+  /* Контейнеры по бокам */
+  .chat-side { position: fixed; top: 0; height: 100vh; width: 280px; z-index: 1; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 20px; }
+  .chat-side.left { left: 0; align-items: flex-start; }
+  .chat-side.right { right: 0; align-items: flex-end; }
+
   /* Стиль пузыря Telegram */
   .tg-bubble { 
-    position: absolute; 
     background: rgba(135, 116, 225, 0.95); 
     color: #ffffff; 
-    padding: 12px 16px; 
-    border-radius: 18px; 
-    border-bottom-right-radius: 4px; 
+    padding: 8px 12px; 
+    border-radius: 14px; 
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    font-size: 14px; 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    font-size: 13px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-width: 280px;
+    gap: 4px;
+    width: fit-content;
+    max-width: 240px;
     opacity: 0;
-    animation: floatMsg 16s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
+    animation: floatMsg 12s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
 
-  .tg-header { display: flex; align-items: center; gap: 8px; }
-  .tg-avatar { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
-  .tg-name { font-size: 12px; font-weight: 600; color: #fff; }
-  .tg-text { font-size: 14px; line-height: 1.4; font-weight: 500; }
-  .tg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px; }
-  .tg-checks { color: #ffffff; font-weight: bold; letter-spacing: -2px; }
+  .chat-side.left .tg-bubble { border-bottom-left-radius: 4px; }
+  .chat-side.right .tg-bubble { border-bottom-right-radius: 4px; background: rgba(10, 132, 255, 0.9); }
+
+  .tg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .tg-avatar { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; font-size: 9px; font-weight: bold; }
+  .tg-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .tg-text { font-size: 13px; line-height: 1.3; font-weight: 500; }
+  .tg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .tg-checks { color: #ffffff; font-weight: bold; letter-spacing: -1px; }
 
   @keyframes floatMsg {
-    0% { opacity: 0; transform: translateY(30px) scale(0.9); }
-    10% { opacity: 1; transform: translateY(0) scale(1); }
-    85% { opacity: 1; transform: translateY(-30px) scale(1); }
-    100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+    0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+    15% { opacity: 1; transform: translateY(0) scale(1); }
+    85% { opacity: 1; transform: translateY(-20px) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
   }
+
+  @media (max-width: 900px) { .chat-side { display: none; } }
 
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
@@ -173,7 +177,9 @@ const css = `
 
 const scripts = `
   <div id="cursor-glow"></div>
-  <div id="chat-bg"></div>
+  <div id="chat-left" class="chat-side left"></div>
+  <div id="chat-right" class="chat-side right"></div>
+  
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
   <script>
@@ -191,26 +197,28 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     });
 
-    // --- ГЕНЕРАТОР СООБЩЕНИЙ (СБОКУ ОТ МЕНЮ) ---
-    const chatBg = document.getElementById('chat-bg');
+    // --- ГЕНЕРАТОР СООБЩЕНИЙ ---
+    const chatLeft = document.getElementById('chat-left');
+    const chatRight = document.getElementById('chat-right');
     
     const team = [
-      { name: 'Антон', role: 'Разработчик', color: '#ff453a', initial: 'А' },
-      { name: 'Маша', role: 'QA Тестер', color: '#32d74b', initial: 'М' },
-      { name: 'Иван', role: 'Лидер', color: '#0a84ff', initial: 'И' },
-      { name: 'Оля', role: 'Дизайнер', color: '#ff9f0a', initial: 'О' }
+      { name: 'Антон', initial: 'А' },
+      { name: 'Маша', initial: 'М' },
+      { name: 'Иван', initial: 'И' },
+      { name: 'Оля', initial: 'О' }
     ];
 
     const messages = [
-      "Режим выживания в Антарктиде готов на 80%",
       "Ми быстро убираем баги",
+      "Режим выживания в Антарктиде готов",
+      "Подколи не стоило прыгать в сугроб...",
       "Фикс готов, деплой прошел успешно",
       "Пофиксили вылет на карте выживания",
       "Оптимизировали FPS до 120",
       "QA проверил, багов в Антарктиде нет",
-      "Задеплоили новый хотфикс",
       "Добавили новые механики замерзания",
       "Исправили баг с сугробами",
+      "Снежная буря теперь работает реалистично",
       "Скорость загрузки выросла на 40%"
     ];
 
@@ -222,21 +230,9 @@ const scripts = `
       const text = messages[Math.floor(Math.random() * messages.length)];
       const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       
-      const isLeft = Math.random() > 0.5;
-      const topPos = Math.random() * 60 + 20;
-      
-      if (isLeft) {
-        el.style.left = (Math.random() * 15 + 5) + '%';
-        el.style.borderBottomRightRadius = '18px';
-        el.style.borderBottomLeftRadius = '4px';
-      } else {
-        el.style.right = (Math.random() * 15 + 5) + '%';
-      }
-      el.style.top = topPos + '%';
-
       el.innerHTML = 
         '<div class="tg-header">' +
-          '<div class="tg-avatar" style="color: ' + user.color + ';">' + user.initial + '</div>' +
+          '<div class="tg-avatar">' + user.initial + '</div>' +
           '<div class="tg-name">' + user.name + '</div>' +
         '</div>' +
         '<div class="tg-text">' + text + '</div>' +
@@ -244,16 +240,21 @@ const scripts = `
           time + ' <span class="tg-checks">✓✓</span>' + 
         '</div>';
 
-      chatBg.appendChild(el);
+      const isLeft = Math.random() > 0.5;
+      if (isLeft) {
+        chatLeft.appendChild(el);
+      } else {
+        chatRight.appendChild(el);
+      }
 
       setTimeout(() => {
         if (el.parentNode) el.remove();
-      }, 16000);
+      }, 12000);
     }
 
     setTimeout(() => {
       createMessage();
-      setInterval(createMessage, 3000);
+      setInterval(createMessage, 2500);
     }, 1000);
   </script>
 `;
