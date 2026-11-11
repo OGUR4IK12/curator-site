@@ -15,33 +15,55 @@ app.use(express.urlencoded({ extended: true }));
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
   
-  /* ПРЕЛОАДЕР */
-  #preloader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), visibility 1.2s ease; overflow: hidden; }
+  /* --- ПРЕЛОАДЕР --- */
+  #preloader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 1s cubic-bezier(0.19, 1, 0.22, 1), visibility 1s ease; overflow: hidden; }
   #preloader.hidden { opacity: 0; visibility: hidden; }
-  .title-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1); display: flex; gap: 2px; z-index: 2; }
+  .title-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); display: flex; gap: 2px; z-index: 2; }
   .title-container.move-up { transform: translate(-50%, -120%); }
-  .letter { color: rgba(255, 255, 255, 0.95); font-size: clamp(28px, 5vw, 64px); font-weight: 800; display: inline-block; opacity: 0; text-shadow: 0 0 20px rgba(255,255,255,0.3); transform: translate(var(--startX), var(--startY)) scale(0.3) rotate(var(--startRot)); transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.2s ease; }
+  .letter { color: rgba(255, 255, 255, 0.95); font-size: clamp(24px, 4vw, 56px); font-weight: 800; display: inline-block; opacity: 0; text-shadow: 0 0 20px rgba(255,255,255,0.3); transform: translate(var(--startX), var(--startY)) scale(0.3) rotate(var(--startRot)); transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), opacity 1s ease; }
   .letter.assembled { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
-  .glow-line { position: absolute; top: 58%; left: 50%; transform: translateX(-50%) scaleX(0); width: 60%; height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); box-shadow: 0 0 20px 3px rgba(255,255,255,0.4); opacity: 0; transition: all 1.5s ease; z-index: 1; }
+  .glow-line { position: absolute; top: 58%; left: 50%; transform: translateX(-50%) scaleX(0); width: 60%; height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); box-shadow: 0 0 20px 3px rgba(255,255,255,0.4); opacity: 0; transition: all 1.2s ease; z-index: 1; }
   .glow-line.show { opacity: 1; transform: translateX(-50%) scaleX(1); }
-  .subtitle { position: absolute; top: 65%; left: 50%; transform: translate(-50%, 20px); color: rgba(255, 255, 255, 0.6); font-size: 14px; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; opacity: 0; transition: all 1.2s ease; z-index: 2; }
+  .subtitle { position: absolute; top: 65%; left: 50%; transform: translate(-50%, 20px); color: rgba(255, 255, 255, 0.6); font-size: 12px; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; opacity: 0; transition: all 1s ease; z-index: 2; }
   .subtitle.show { opacity: 1; transform: translate(-50%, 0); }
 
-  /* ОСНОВНОЙ САЙТ */
+  /* --- ОСНОВНОЙ САЙТ --- */
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-  body { margin: 0; background: #050505; color: #fff; display: flex; justify-content: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; background-image: radial-gradient(circle at 10% 20%, rgba(108,92,231,0.1) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(0,184,148,0.1) 0%, transparent 40%); }
+  body { 
+    margin: 0; 
+    background: #050505; 
+    color: #fff; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    padding: 20px; 
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    background-image: radial-gradient(circle at 10% 20%, rgba(108,92,231,0.1) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(0,184,148,0.1) 0%, transparent 40%);
+  }
+
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
   
-  .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05); border-radius: 24px; }
-  .container { padding: 40px; width: 100%; max-width: 520px; margin-top: 40px; position: relative; z-index: 1; }
+  .glass { 
+    background: rgba(255, 255, 255, 0.03); 
+    backdrop-filter: blur(24px) saturate(180%); 
+    -webkit-backdrop-filter: blur(24px) saturate(180%); 
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05); 
+    border-radius: 24px; 
+  }
+
+  .container { padding: 40px; width: 100%; max-width: 520px; margin: 40px auto; position: relative; z-index: 1; }
   .wide-container { max-width: 1000px; }
-  h1, h2 { text-align: center; color: #fff; margin-bottom: 25px; font-weight: 800; letter-spacing: -0.5px; }
+  h1, h2, h3 { text-align: center; color: #fff; margin-bottom: 25px; font-weight: 800; letter-spacing: -0.5px; }
   
   input, select, textarea { width: 100%; padding: 16px; margin-bottom: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; font-size: 15px; color: #fff; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
   input:focus, select:focus { border-color: rgba(255,255,255,0.3); outline: none; background: rgba(0,0,0,0.5); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 3px rgba(255,255,255,0.05); }
   button { width: 100%; padding: 16px; background: rgba(255,255,255,0.9); color: #000; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 0 4px 15px rgba(255,255,255,0.1); }
   button:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 10px 30px rgba(255,255,255,0.25); background: #fff; }
   button:active { transform: translateY(0) scale(0.98); }
+  
   .link { text-align: center; margin-top: 24px; font-size: 14px; }
   .link a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: #fff; }
@@ -67,35 +89,66 @@ const css = `
   .tab-btn:hover:not(.active) { color: #fff; }
   
   .comment-box { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 14px; border-radius: 12px; margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.8); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+  
+  /* МЕНЮ НА ГЛАВНОЙ */
+  .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 900px; }
+  @media (max-width: 768px) { .main-menu { grid-template-columns: 1fr; } }
+  
+  .menu-panel { 
+    padding: 40px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    cursor: pointer;
+    min-height: 300px;
+  }
+  .menu-panel:hover { 
+    transform: translateY(-8px) scale(1.02); 
+    background: rgba(255, 255, 255, 0.06); 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  }
+  .menu-panel h2 { font-size: 28px; margin-bottom: 10px; }
+  .menu-panel p { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 30px; }
+  
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } 
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-  
-  /* СТИЛИ ДЛЯ МЕНЮ И КАБИНЕТА */
-  .menu-btn { display: block; text-align: center; text-decoration: none; padding: 20px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 18px; font-weight: 600; transition: all 0.3s; margin-bottom: 16px; }
-  .menu-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
 `;
 
 const scripts = `
   <div id="preloader"><div class="glow-line" id="glow-line"></div><div class="title-container" id="title-container"></div><div class="subtitle" id="subtitle">SURVIVAL IN ANTARCTICA</div></div>
   <canvas id="bg-canvas"></canvas>
   <script>
-    // --- ПРЕЛОАДЕР ---
-    const titleText = "SURVIVAL IN ANTARCTICA";
-    const container = document.getElementById('title-container');
-    titleText.split('').forEach((char, index) => {
-      if (char === ' ') { const space = document.createElement('span'); space.innerHTML = '&nbsp;'; container.appendChild(space); } 
-      else {
-        const span = document.createElement('span'); span.textContent = char; span.className = 'letter';
-        span.style.setProperty('--startX', (Math.random() - 0.5) * window.innerWidth * 1.5 + 'px');
-        span.style.setProperty('--startY', (Math.random() - 0.5) * window.innerHeight * 1.5 + 'px');
-        span.style.setProperty('--startRot', (Math.random() - 0.5) * 180 + 'deg');
-        container.appendChild(span);
-      }
-    });
-    setTimeout(() => { document.querySelectorAll('.letter').forEach((l, i) => setTimeout(() => l.classList.add('assembled'), i * 25)); }, 100);
-    setTimeout(() => { document.getElementById('title-container').classList.add('move-up'); document.getElementById('glow-line').classList.add('show'); }, 1800);
-    setTimeout(() => { document.getElementById('subtitle').classList.add('show'); }, 2200);
-    setTimeout(() => { document.getElementById('preloader').classList.add('hidden'); setTimeout(() => document.getElementById('preloader').remove(), 1200); }, 4500);
+    // --- ПРЕЛОАДЕР (только при первом заходе) ---
+    if (!sessionStorage.getItem('preloaderShown')) {
+      const titleText = "SURVIVAL IN ANTARCTICA";
+      const container = document.getElementById('title-container');
+      titleText.split('').forEach((char, index) => {
+        if (char === ' ') { const space = document.createElement('span'); space.innerHTML = '&nbsp;'; container.appendChild(space); } 
+        else {
+          const span = document.createElement('span'); span.textContent = char; span.className = 'letter';
+          span.style.setProperty('--startX', (Math.random() - 0.5) * window.innerWidth * 1.5 + 'px');
+          span.style.setProperty('--startY', (Math.random() - 0.5) * window.innerHeight * 1.5 + 'px');
+          span.style.setProperty('--startRot', (Math.random() - 0.5) * 180 + 'deg');
+          container.appendChild(span);
+        }
+      });
+      setTimeout(() => { document.querySelectorAll('.letter').forEach((l, i) => setTimeout(() => l.classList.add('assembled'), i * 25)); }, 100);
+      setTimeout(() => { document.getElementById('title-container').classList.add('move-up'); document.getElementById('glow-line').classList.add('show'); }, 1800);
+      setTimeout(() => { document.getElementById('subtitle').classList.add('show'); }, 2200);
+      setTimeout(() => { 
+        document.getElementById('preloader').classList.add('hidden'); 
+        sessionStorage.setItem('preloaderShown', 'true'); // Запоминаем, что показали
+        setTimeout(() => document.getElementById('preloader').remove(), 1200); 
+      }, 4500);
+    } else {
+      // Если уже показывали - просто удаляем прелоадер
+      document.getElementById('preloader').remove();
+    }
 
     // --- КУБИКИ ---
     const canvas = document.getElementById('bg-canvas');
@@ -124,9 +177,22 @@ const scripts = `
   </script>
 `;
 
-// --- СТАРТОВАЯ СТРАНИЦА ---
+// --- ГЛАВНАЯ СТРАНИЦА (ДВЕ ПАНЕЛИ) ---
 app.get('/', (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Survival in Antarctica</h2><a href="/apply" class="menu-btn">📝 Подать заявку в команду</a><a href="/login" class="menu-btn">💼 Задачи для сотрудников</a></div></body></html>`);
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
+  <div class="main-menu">
+    <a href="/login" class="menu-panel glass">
+      <h2>Сотрудникам</h2>
+      <p>Вход в личный кабинет<br>для получения задач</p>
+      <div style="padding: 12px 30px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: rgba(255,255,255,0.05);">Войти</div>
+    </a>
+    <a href="/apply" class="menu-panel glass">
+      <h2>Соискателям</h2>
+      <p>Подать заявку в команду<br>на одну из должностей</p>
+      <div style="padding: 12px 30px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: rgba(255,255,255,0.05);">Подать заявку</div>
+    </a>
+  </div>
+  </body></html>`);
 });
 
 // --- ЗАЯВКА ---
@@ -159,10 +225,9 @@ app.post('/dashboard', async (req, res) => {
     
     const user = rows[0];
     if (user.status !== 'Одобрено') {
-      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена или была отклонена. Вы не можете войти в кабинет.</div><div class="link"><a href="/">На главную</a></div></div></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена или была отклонена.</div><div class="link"><a href="/">На главную</a></div></div></body></html>`);
     }
 
-    // Если одобрен, показываем задачи его отдела
     const { rows: tasks } = await pool.query('SELECT * FROM tasks WHERE role = $1 ORDER BY created_at DESC', [user.role]);
     
     let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass"><h2>Кабинет: ${user.name} (${user.role})</h2><div class="link" style="text-align:right; margin-bottom:20px;"><a href="/">Выйти</a></div>`;
@@ -185,7 +250,7 @@ app.post('/dashboard', async (req, res) => {
 // --- АДМИНКА (ЗАЯВКИ И ЗАДАЧИ) ---
 app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
-  const tab = req.query.tab || 'applications'; // applications или tasks
+  const tab = req.query.tab || 'applications';
 
   if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
@@ -222,7 +287,7 @@ app.get('/admin', async (req, res) => {
           <input type="hidden" name="pass" value="${pass}">
           <select name="role" required><option value="" disabled selected hidden>Выберите отдел</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select>
           <input name="title" placeholder="Название задачи" required>
-          <textarea name="description" placeholder="Описание задачи (что нужно сделать)" rows="3" required></textarea>
+          <textarea name="description" placeholder="Описание задачи" rows="3" required></textarea>
           <button type="submit" style="background:#6c5ce7; color:#fff;">Создать задачу</button>
         </form>
       </div>
@@ -242,7 +307,6 @@ app.get('/admin', async (req, res) => {
   }
 });
 
-// Обновление статуса заявки
 app.post('/admin/status', async (req, res) => {
   const { id, status, pass, comment } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -250,7 +314,6 @@ app.post('/admin/status', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=applications'); 
 });
 
-// Создание задачи
 app.post('/admin/task', async (req, res) => {
   const { role, title, description, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
