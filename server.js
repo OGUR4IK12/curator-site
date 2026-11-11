@@ -277,3 +277,6 @@ app.get('/admin', async (req, res) => { const pass = req.query.pass; const tab =
 // ... (Остальные POST-роуты админки остаются без изменений) ...
 
 app.listen(PORT, () => console.log('Сервер запущен на порту ' + PORT));
+
+
+//upbddf
