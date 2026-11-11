@@ -54,45 +54,8 @@ const css = `
   #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
-  .chat-side { position: fixed; top: 0; height: 100vh; width: 280px; z-index: 1; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 20px; padding-bottom: 40px; }
-  .chat-side.left { left: 0; align-items: flex-start; }
-  .chat-side.right { right: 0; align-items: flex-end; }
-
-  .tg-bubble { 
-    background: rgba(135, 116, 225, 0.95); 
-    color: #ffffff; 
-    padding: 8px 12px; 
-    border-radius: 14px; 
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    font-size: 13px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: fit-content;
-    max-width: 240px;
-    opacity: 0;
-    animation: floatMsg 6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-  }
-
-  .chat-side.left .tg-bubble { border-bottom-left-radius: 4px; }
-  .chat-side.right .tg-bubble { border-bottom-right-radius: 4px; background: rgba(10, 132, 255, 0.9); }
-
-  .tg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-  .tg-avatar { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; font-size: 9px; font-weight: bold; }
-  .tg-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.9); }
-  .tg-text { font-size: 13px; line-height: 1.3; font-weight: 500; }
-  .tg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 2px; }
-  .tg-checks { color: #ffffff; font-weight: bold; letter-spacing: -1px; }
-
-  @keyframes floatMsg {
-    0% { opacity: 0; transform: translateY(20px) scale(0.9); }
-    10% { opacity: 1; transform: translateY(0) scale(1); }
-    85% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-20px) scale(0.9); }
-  }
-
-  @media (max-width: 900px) { .chat-side { display: none; } }
+  /* Канвас для кубиков */
+  #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; opacity: 0.8; }
 
   .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
 
@@ -175,9 +138,7 @@ const css = `
 
 const scripts = `
   <div id="cursor-glow"></div>
-  <div id="chat-left" class="chat-side left"></div>
-  <div id="chat-right" class="chat-side right"></div>
-  
+  <canvas id="bg-canvas"></canvas>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
   <script>
@@ -195,71 +156,76 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     });
 
-    const chatLeft = document.getElementById('chat-left');
-    const chatRight = document.getElementById('chat-right');
-    
-    const team = [
-      { name: 'Антон', initial: 'А' },
-      { name: 'Маша', initial: 'М' },
-      { name: 'Иван', initial: 'И' },
-      { name: 'Оля', initial: 'О' }
-    ];
-
-    const messages = [
-      "Ми быстро убираем баги",
-      "Режим выживания в Антарктиде готов",
-      "Подколи не стоило прыгать в сугроб...",
-      "Фикс готов, деплой прошел",
-      "Опять кто-то сломал сборку?",
-      "Я нашел баг, но он меня нашел первым",
-      "Кофе закончился, баги остались",
-      "Пофиксили вылет на карте",
-      "Кто забыл закрыть фигурную скобку?",
-      "QA проверил, багов нет",
-      "Добавили механики замерзания",
-      "Работаем, не отвлекаемся!",
-      "Снежная буря работает реалистично",
-      "Ура, релиз прошел успешно!",
-      "Скорость выросла на 40%",
-      "Пинг 20, все летает",
-      "Еще один фикс и спать",
-      "Код ревью пройдено, мержим"
-    ];
-
-    function createMessage() {
-      const el = document.createElement('div');
-      el.className = 'tg-bubble';
+    // --- СКРИПТ КУБИКОВ (Только для обычного сайта, не для админки) ---
+    if (!window.location.pathname.startsWith('/admin')) {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
       
-      const user = team[Math.floor(Math.random() * team.length)];
-      const text = messages[Math.floor(Math.random() * messages.length)];
-      const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      
-      el.innerHTML = 
-        '<div class="tg-header">' +
-          '<div class="tg-avatar">' + user.initial + '</div>' +
-          '<div class="tg-name">' + user.name + '</div>' +
-        '</div>' +
-        '<div class="tg-text">' + text + '</div>' +
-        '<div class="tg-meta">' + 
-          time + ' <span class="tg-checks">✓✓</span>' + 
-        '</div>';
+      const spacing = 40; 
+      const cubeSize = 18;
 
-      const isLeft = Math.random() > 0.5;
-      if (isLeft) {
-        chatLeft.appendChild(el);
-      } else {
-        chatRight.appendChild(el);
+      function resize() { 
+        width = canvas.width = window.innerWidth; 
+        height = canvas.height = window.innerHeight; 
+        initCubes(); 
       }
 
-      setTimeout(() => {
-        if (el.parentNode) el.remove();
-      }, 6000);
-    }
+      function initCubes() { 
+        cubes = []; 
+        for (let x = spacing/2; x < width; x += spacing) { 
+          for (let y = spacing/2; y < height; y += spacing) { 
+            cubes.push({ x, y, baseX: x, baseY: y, vx: 0, vy: 0, phase: Math.random() * Math.PI * 2, speed: 0.001 + Math.random() * 0.002 }); 
+          } 
+        } 
+      }
+      
+      window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+      window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
 
-    setTimeout(() => {
-      createMessage();
-      setInterval(createMessage, 1500);
-    }, 500);
+      function animate(time) {
+        ctx.clearRect(0, 0, width, height);
+        
+        cubes.forEach(cube => {
+          let targetX = cube.baseX + Math.sin(time * cube.speed + cube.phase) * 6;
+          let targetY = cube.baseY + Math.cos(time * cube.speed + cube.phase) * 6;
+          
+          let dx = mouse.x - cube.x, dy = mouse.y - cube.y, dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) { 
+            let force = (120 - dist) / 120; 
+            targetX -= (dx / dist) * force * 20; 
+            targetY -= (dy / dist) * force * 20; 
+          }
+          
+          cube.vx += (targetX - cube.x) * 0.05; 
+          cube.vy += (targetY - cube.y) * 0.05; 
+          cube.vx *= 0.8; 
+          cube.vy *= 0.8; 
+          cube.x += cube.vx; 
+          cube.y += cube.vy;
+          
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'; 
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; 
+          ctx.lineWidth = 1; 
+          ctx.beginPath(); 
+          
+          if (ctx.roundRect) {
+            ctx.roundRect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize, 4); 
+          } else {
+            ctx.rect(cube.x - cubeSize/2, cube.y - cubeSize/2, cubeSize, cubeSize);
+          }
+          
+          ctx.fill(); 
+          ctx.stroke();
+        });
+        
+        requestAnimationFrame(animate);
+      }
+      
+      window.addEventListener('resize', resize); 
+      resize(); 
+      requestAnimationFrame(animate);
+    }
   </script>
 `;
 
