@@ -9,10 +9,9 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// Глобальные стили с поддержкой светлой/темной темы
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap');
   
@@ -31,7 +30,6 @@ const css = `
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.6; }
   [data-theme="light"] #bg-canvas { opacity: 0.3; }
 
-  /* Кнопка смены темы */
   .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; font-size: 20px; transition: all 0.2s; }
   .theme-toggle:hover { transform: scale(1.1); border-color: var(--accent); }
 
@@ -96,24 +94,24 @@ const css = `
   .proof-img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border); }
   .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); }
   
-  /* Статистика */
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
   @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
   .stat-card { background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; text-align: center; }
   .stat-val { font-size: 32px; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 5px; }
   .stat-lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 
-  /* Уведомления */
   .toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--accent); color: var(--text); padding: 16px 24px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); display: flex; align-items: center; gap: 10px; }
   .toast.show { transform: translateY(0); opacity: 1; }
 
-  /* Комментарии */
   .comments-box { margin-top: 15px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-  .comment { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  .comment:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .announcement { background: rgba(108,92,231,0.1); border: 1px solid var(--accent); padding: 20px; border-radius: 12px; margin-bottom: 24px; }
+  .announcement h3 { margin: 0 0 8px 0; text-align: left; font-size: 16px; color: var(--accent); }
+  .announcement p { margin: 0; color: var(--text); font-size: 14px; line-height: 1.5; }
+  
+  .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--success); border-radius: 4px; transition: width 0.5s; }
 `;
 
-// JS: Прелоадер, Кубики, Смена темы и Уведомления
 const scripts = `
   <div id="preloader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#09090b;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;"><div class="title-container" id="title-container" style="display:flex;gap:2px;"></div></div>
   <canvas id="bg-canvas"></canvas>
@@ -121,7 +119,6 @@ const scripts = `
   <div id="toast" class="toast">🔔 <span id="toast-text"></span></div>
 
   <script>
-    // 10. СМЕНА ТЕМЫ
     function toggleTheme() {
       const body = document.body;
       const isLight = body.getAttribute('data-theme') === 'light';
@@ -134,15 +131,6 @@ const scripts = `
       document.getElementById('theme-btn').textContent = '☀️';
     }
 
-    // 7. ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toast-text').textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 4000);
-    }
-
-    // ПРЕЛОАДЕР
     if (!sessionStorage.getItem('preloaderShown')) {
       const titleText = "SURVIVAL IN ANTARCTICA";
       const container = document.getElementById('title-container');
@@ -158,7 +146,6 @@ const scripts = `
       setTimeout(() => { document.getElementById('preloader').style.opacity = '0'; setTimeout(() => document.getElementById('preloader').remove(), 800); sessionStorage.setItem('preloaderShown', 'true'); }, 3000);
     } else { document.getElementById('preloader').remove(); }
 
-    // КУБИКИ
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let width, height, mouse = { x: -1000, y: -1000 }, cubes = [];
@@ -187,15 +174,29 @@ const scripts = `
   </script>
 `;
 
-// Функция отрисовки кабинета сотрудника
-const renderDashboard = async (user, res) => {
+const renderDashboard = async (user, res, message = '') => {
   const { rows: tasks } = await pool.query(`
     SELECT * FROM tasks 
-    WHERE role = $1 AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours')
+    WHERE role = $1 AND status != 'Удалено' AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours')
     ORDER BY created_at DESC
   `, [user.role]);
   
-  let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass animate-in"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><h2 style="margin:0;">Кабинет: ${user.name} (${user.role})</h2><div style="background:var(--warning); color:#000; padding:5px 15px; border-radius:20px; font-weight:800;">🏆 ${user.points} Очков</div></div><div class="link" style="text-align:right; margin-bottom:20px;"><a href="/">Выйти</a></div><div class="grid">`;
+  const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
+  const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>📢 ${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
+
+  let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass animate-in">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0;">Кабинет: ${user.name}</h2>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div style="background:var(--warning); color:#000; padding:5px 15px; border-radius:20px; font-weight:800;">🏆 ${user.points} Очков</div>
+        <button onclick="document.getElementById('settings-modal').style.display='flex'" style="width:auto; padding:8px 15px; background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:8px; font-size:14px;">⚙️</button>
+      </div>
+    </div>
+    
+    ${message ? `<div class="alert" style="background:rgba(16,185,129,0.1); color:var(--success); border-color:rgba(16,185,129,0.2);">${message}</div>` : ''}
+    ${announcement}
+
+    <div class="link" style="text-align:right; margin-bottom:20px;"><a href="/">Выйти</a></div><div class="grid">`;
   
   if (tasks.length === 0) html += `<p style="text-align:center; color:var(--muted); grid-column: 1/-1;">Для вашего отдела пока нет активных задач.</p>`;
   else {
@@ -214,7 +215,7 @@ const renderDashboard = async (user, res) => {
       } else if (task.status === 'В работе') {
         if (task.taken_by === user.username) {
           badgeClass = 'taken'; badgeText = 'В работе (у вас)';
-          actionHtml = `<form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:15px;"><input type="hidden" name="task_id" value="${task.id}"><input type="hidden" name="username" value="${user.username}"><input type="hidden" name="password" value="${user.password}"><p style="font-size:13px; color:var(--muted); margin-bottom:10px;">Прикрепите скриншот:</p><input type="file" name="proof" accept="image/*" required style="padding:10px; font-size:13px; margin-bottom:10px; background:var(--bg); border:1px dashed var(--border); color:var(--text);"><button type="submit" class="btn-ok" style="width:100%;">Я выполнил задачу</button></form>`;
+          actionHtml = `<form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:15px;"><input type="hidden" name="task_id" value="${task.id}"><input type="hidden" name="username" value="${user.username}"><input type="hidden" name="password" value="${user.password}"><p style="font-size:13px; color:var(--muted); margin-bottom:10px;">Прикрепите файл или скриншот:</p><input type="file" name="proof" required style="padding:10px; font-size:13px; margin-bottom:10px; background:var(--bg); border:1px dashed var(--border); color:var(--text);"><button type="submit" class="btn-ok" style="width:100%;">Я выполнил задачу</button></form>`;
         } else {
           badgeClass = 'taken'; badgeText = 'В работе';
           actionHtml = `<p style="color:var(--purple); font-size:13px; font-weight:500; text-align:center; padding:12px; background:rgba(108,92,231,0.1); border-radius:8px;">Взял(а): ${task.taken_by}</p>`;
@@ -226,14 +227,28 @@ const renderDashboard = async (user, res) => {
 
       html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}"><span class="badge ${badgeClass}">${badgeText}</span><h3 style="margin-top:0; text-align:left; font-size:18px;">${task.title}</h3>${deadlineHtml}<p style="color:var(--muted); font-size:14px; margin-bottom:15px;">${task.description}</p>${actionHtml}`;
       
-      // Комментарии (Чат)
       if (task.comments) {
         html += `<div class="comments-box"><b>Обсуждение:</b><br>${task.comments.replace(/\n/g, '<br>')}</div>`;
       }
       html += `</div>`;
     });
   }
-  html += `</div></div></body></html>`;
+  
+  // Модальное окно настроек (Смена пароля)
+  html += `</div>
+  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+    <div class="glass" style="padding:40px; width:100%; max-width:400px; position:relative;">
+      <h3>Настройки профиля</h3>
+      <form action="/change-password" method="POST">
+        <input type="hidden" name="username" value="${user.username}">
+        <input type="password" name="old_password" placeholder="Старый пароль" required>
+        <input type="password" name="new_password" placeholder="Новый пароль" required>
+        <button type="submit" class="btn-purple" style="width:100%;">Сменить пароль</button>
+      </form>
+      <button onclick="document.getElementById('settings-modal').style.display='none'" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text);">Закрыть</button>
+    </div>
+  </div>
+  </div></body></html>`;
   res.send(html);
 };
 
@@ -264,11 +279,21 @@ app.post('/dashboard', async (req, res) => {
   const { username, password } = req.body;
   try {
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2 AND is_deleted = false', [username, password]);
-    if (rows.length === 0) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass animate-in"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль (либо аккаунт удален).</div><div class="link"><a href="/login">Назад</a></div></div></body></html>`);
+    if (rows.length === 0) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass animate-in"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/login">Назад</a></div></div></body></html>`);
     const user = rows[0];
     if (user.status !== 'Одобрено') return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass animate-in"><h2>Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена или была отклонена.</div><div class="link"><a href="/">На главную</a></div></div></body></html>`);
     await renderDashboard(user, res);
   } catch (err) { res.status(500).send('Ошибка сервера'); }
+});
+
+// Смена пароля
+app.post('/change-password', async (req, res) => {
+  const { username, old_password, new_password } = req.body;
+  const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, old_password]);
+  if (rows.length === 0) return res.send('<script>alert("Старый пароль неверный"); history.back();</script>');
+  await pool.query('UPDATE applications SET password = $1 WHERE username = $2', [new_password.trim(), username]);
+  const { rows: updated } = await pool.query('SELECT * FROM applications WHERE username = $1', [username]);
+  await renderDashboard(updated[0], res, '✅ Пароль успешно изменен!');
 });
 
 app.post('/task/take', async (req, res) => {
@@ -278,6 +303,7 @@ app.post('/task/take', async (req, res) => {
   await renderDashboard(rows[0], res);
 });
 
+// Универсальная загрузка файлов
 app.post('/task/done', (req, res) => {
   let chunks = [];
   req.on('data', chunk => chunks.push(chunk));
@@ -286,13 +312,15 @@ app.post('/task/done', (req, res) => {
     const boundary = req.headers['content-type'].split('boundary=')[1];
     const parts = buffer.toString('binary').split('--' + boundary);
     
-    let task_id, username, password, proofBase64 = '';
+    let task_id, username, password, proofBase64 = '', filename = 'file';
     for (let part of parts) {
       if (part.includes('name="task_id"')) task_id = part.split('\r\n\r\n')[1].split('\r\n')[0];
       if (part.includes('name="username"')) username = part.split('\r\n\r\n')[1].split('\r\n')[0];
       if (part.includes('name="password"')) password = part.split('\r\n\r\n')[1].split('\r\n')[0];
       if (part.includes('name="proof"')) {
-        const matches = part.match(/Content-Type: (image\/.*)\r\n\r\n([\s\S]*)\r\n$/);
+        const nameMatch = part.match(/filename="(.*)"/);
+        if (nameMatch) filename = nameMatch[1];
+        const matches = part.match(/Content-Type: (.*)\r\n\r\n([\s\S]*)\r\n$/);
         if (matches) {
           const base64 = Buffer.from(matches[2], 'binary').toString('base64');
           proofBase64 = `data:${matches[1]};base64,${base64}`;
@@ -300,7 +328,7 @@ app.post('/task/done', (req, res) => {
       }
     }
     if (task_id && username) {
-      await pool.query("UPDATE tasks SET status = 'Выполнено', completed_at = NOW(), proof_image = $1 WHERE id = $2 AND taken_by = $3", [proofBase64, task_id, username]);
+      await pool.query("UPDATE tasks SET status = 'Выполнено', completed_at = NOW(), proof_file = $1, proof_filename = $2 WHERE id = $3 AND taken_by = $4", [proofBase64, filename, task_id, username]);
       const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
       await renderDashboard(rows[0], res);
     } else { res.redirect('/login'); }
@@ -311,11 +339,11 @@ app.post('/task/done', (req, res) => {
 app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
   const tab = req.query.tab || 'dash';
+  const search = req.query.search || '';
 
   if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass animate-in" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
   try {
-    // Сбор статистики для Дашборда
     const stats = await pool.query(`
       SELECT 
         (SELECT COUNT(*) FROM applications WHERE status = 'Одобрено' AND is_deleted = false) as workers,
@@ -325,9 +353,17 @@ app.get('/admin', async (req, res) => {
     `);
     const s = stats.rows[0];
 
-    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass animate-in"><h2>Админ-панель</h2><div class="tabs"><a href="/admin?pass=${pass}&tab=dash" class="tab-btn ${tab === 'dash' ? 'active' : ''}">📊 Дашборд</a><a href="/admin?pass=${pass}&tab=tasks" class="tab-btn ${tab === 'tasks' ? 'active' : ''}">Задачи</a><a href="/admin?pass=${pass}&tab=applications" class="tab-btn ${tab === 'applications' ? 'active' : ''}">Заявки</a><a href="/admin?pass=${pass}&tab=workers" class="tab-btn ${tab === 'workers' ? 'active' : ''}">Сотрудники</a><a href="/admin?pass=${pass}&tab=trash" class="tab-btn ${tab === 'trash' ? 'active' : ''}">🗑️ Корзина</a></div>`;
+    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass animate-in"><h2>Админ-панель</h2>
+    <div class="tabs">
+      <a href="/admin?pass=${pass}&tab=dash" class="tab-btn ${tab === 'dash' ? 'active' : ''}">📊 Дашборд</a>
+      <a href="/admin?pass=${pass}&tab=announcements" class="tab-btn ${tab === 'announcements' ? 'active' : ''}">📢 Объявления</a>
+      <a href="/admin?pass=${pass}&tab=tasks" class="tab-btn ${tab === 'tasks' ? 'active' : ''}">Задачи</a>
+      <a href="/admin?pass=${pass}&tab=applications" class="tab-btn ${tab === 'applications' ? 'active' : ''}">Заявки</a>
+      <a href="/admin?pass=${pass}&tab=workers" class="tab-btn ${tab === 'workers' ? 'active' : ''}">Сотрудники</a>
+      <a href="/admin?pass=${pass}&tab=trash" class="tab-btn ${tab === 'trash' ? 'active' : ''}">🗑️ Корзина</a>
+    </div>`;
 
-    // 2. ДАШБОРД (СТАТИСТИКА)
+    // ДАШБОРД
     if (tab === 'dash') {
       html += `<div class="stats-grid animate-in delay-1">
         <div class="stat-card"><div class="stat-val">${s.workers}</div><div class="stat-lbl">Сотрудников</div></div>
@@ -336,17 +372,27 @@ app.get('/admin', async (req, res) => {
         <div class="stat-card"><div class="stat-val" style="color:var(--success)">${s.on_review}</div><div class="stat-lbl">На проверке</div></div>
       </div>`;
       
-      // Топ сотрудников (Рейтинг)
+      // Полоса прогресса по задачам
+      const totalTasks = parseInt(s.in_work) + parseInt(s.on_review);
+      const progress = totalTasks === 0 ? 0 : Math.round((s.on_review / totalTasks) * 100);
+      html += `<div class="card animate-in delay-2" style="padding:20px;"><h3 style="text-align:left; margin-bottom:10px; font-size:16px;">Прогресс выполнения задач</h3><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div><p style="text-align:right; font-size:12px; color:var(--muted); margin-top:5px;">${progress}% задач сдано на проверку</p></div>`;
+      
       const { rows: topWorkers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY points DESC LIMIT 5");
-      html += `<div class="admin-col animate-in delay-2" style="margin-top:20px;"><h3>🏆 Топ сотрудников (по очкам)</h3>`;
+      html += `<div class="admin-col animate-in delay-3" style="margin-top:20px;"><h3>🏆 Топ сотрудников</h3>`;
       topWorkers.forEach((w, i) => {
-        html += `<div class="worker-row" style="border-left: 3px solid ${i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'transparent'};">
-          <div style="display:flex; align-items:center; gap:15px;">
-            <span style="font-size:20px; font-weight:800; color:var(--muted);">#${i+1}</span>
-            <div><p style="margin:0; font-size:15px;"><b>${w.name}</b> <span style="color:var(--accent); font-size:13px;">(${w.role})</span></p></div>
-          </div>
-          <div style="font-size:18px; font-weight:800; color:var(--warning);">${w.points} 🏅</div>
-        </div>`;
+        html += `<div class="worker-row" style="border-left: 3px solid ${i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'transparent'};"><div style="display:flex; align-items:center; gap:15px;"><span style="font-size:20px; font-weight:800; color:var(--muted);">#${i+1}</span><div><p style="margin:0; font-size:15px;"><b>${w.name}</b> <span style="color:var(--accent); font-size:13px;">(${w.role})</span></p></div></div><div style="font-size:18px; font-weight:800; color:var(--warning);">${w.points} 🏅</div></div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ОБЪЯВЛЕНИЯ
+    if (tab === 'announcements') {
+      html += `<div class="card animate-in"><h3 style="text-align:left;">➕ Новое объявление</h3><form action="/admin/announcement" method="POST" style="margin-top:15px;"><input type="hidden" name="pass" value="${pass}"><input name="title" placeholder="Заголовок (напр. Важные новости)" required><textarea name="content" placeholder="Текст объявления..." rows="3" required></textarea><button type="submit" class="btn-purple" style="width:100%;">Опубликовать</button></form></div>`;
+      
+      const { rows: anns } = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC');
+      html += `<div class="grid">`;
+      anns.forEach(ann => {
+        html += `<div class="card"><div style="display:flex; justify-content:space-between;"><p style="font-size:12px; color:var(--muted);">${new Date(ann.created_at).toLocaleString('ru-RU')}</p><form action="/admin/delete-announcement" method="POST" onsubmit="return confirm('Удалить объявление?');"><input type="hidden" name="id" value="${ann.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-del">🗑️</button></form></div><h3 style="text-align:left; font-size:16px;">${ann.title}</h3><p style="font-size:14px; color:var(--muted);">${ann.content}</p></div>`;
       });
       html += `</div>`;
     }
@@ -380,11 +426,14 @@ app.get('/admin', async (req, res) => {
       html += `</div></div>`;
     }
 
-    // 5. ЗАДАЧИ (С ДЕДЛАЙНАМИ)
+    // ЗАДАЧИ (С ПОИСКОМ И ФАЙЛАМИ)
     if (tab === 'tasks') {
-      const { rows: tasks } = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
-      html += `<div class="card animate-in" style="margin-bottom:30px;"><h3 style="text-align:left;">➕ Выдать новую задачу</h3><form action="/admin/task" method="POST" style="margin-top:15px;"><input type="hidden" name="pass" value="${pass}"><select name="role" required><option value="" disabled selected hidden>Выберите отдел</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="title" placeholder="Название задачи" required><textarea name="description" placeholder="Описание задачи" rows="2" required></textarea><input type="datetime-local" name="deadline" title="Дедлайн (необязательно)"><button type="submit" class="btn-purple" style="width:100%;">Создать задачу</button></form></div><div class="grid">`;
+      const { rows: tasks } = await pool.query('SELECT * FROM tasks WHERE title ILIKE $1 AND status != \'Удалено\' ORDER BY created_at DESC', [`%${search}%`]);
+      html += `<div class="card animate-in" style="margin-bottom:30px;"><h3 style="text-align:left;">➕ Выдать новую задачу</h3><form action="/admin/task" method="POST" style="margin-top:15px;"><input type="hidden" name="pass" value="${pass}"><select name="role" required><option value="" disabled selected hidden>Выберите отдел</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="title" placeholder="Название задачи" required><textarea name="description" placeholder="Описание задачи" rows="2" required></textarea><input type="datetime-local" name="deadline" title="Дедлайн (необязательно)"><button type="submit" class="btn-purple" style="width:100%;">Создать задачу</button></form></div>`;
       
+      html += `<form action="/admin" method="GET" style="margin-bottom:20px; display:flex; gap:10px;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="tab" value="tasks"><input name="search" placeholder="Поиск по задачам..." value="${search}" style="margin-bottom:0;"><button type="submit" class="btn-purple" style="width:auto; padding:0 20px;">Найти</button></form>`;
+      
+      html += `<div class="grid">`;
       tasks.forEach((task, i) => {
         let badge = 'pending', text = 'Свободна';
         let extra = '';
@@ -394,12 +443,15 @@ app.get('/admin', async (req, res) => {
         if (task.status === 'Выполнено') { badge = 'approved'; text = 'Выполнено'; extra = `<p style="font-size:12px; color:var(--success); margin-top:5px;">Сдал: ${task.taken_by}</p>`; }
 
         html += `<div class="card ${badge} animate-in delay-${Math.min(i+1, 3)}"><div style="display:flex; justify-content:space-between; align-items:start;"><div style="display:flex; gap:8px;"><span class="badge ${badge}">${task.role}</span><span class="badge ${badge}">${text}</span></div><div style="display:flex; gap:5px;"><form action="/admin/delete-task" method="POST" onsubmit="return confirm('Отправить задачу в корзину?');"><input type="hidden" name="id" value="${task.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-del">🗑️</button></form></div></div><h3 style="margin-top:10px; text-align:left; font-size:18px;">${task.title}</h3><p style="color:var(--muted); font-size:14px;">${task.description}</p>${deadlineStr}${extra}`;
-        if (task.proof_image) html += `<p style="font-size:12px; color:var(--muted); margin-top:10px; margin-bottom:5px;">Доказательство:</p><img src="${task.proof_image}" class="proof-img">`;
         
-        // 3. КОММЕНТАРИИ (ЧАТ)
+        if (task.proof_file) {
+          html += `<p style="font-size:12px; color:var(--muted); margin-top:10px;">Доказательство (${task.proof_filename}):</p>`;
+          if (task.proof_file.startsWith('data:image')) html += `<img src="${task.proof_file}" class="proof-img">`;
+          else html += `<a href="${task.proof_file}" download="${task.proof_filename}" style="display:inline-block; margin-top:5px; color:var(--accent); font-size:14px;">📥 Скачать файл</a>`;
+        }
+        
         html += `<div class="comments-box" style="margin-top:15px;"><b>Обсуждение:</b><br>${(task.comments || 'Пока нет сообщений').replace(/\n/g, '<br>')}<form action="/admin/comment" method="POST" style="margin-top:10px; display:flex; gap:5px;"><input type="hidden" name="id" value="${task.id}"><input type="hidden" name="pass" value="${pass}"><input name="text" placeholder="Написать..." style="margin-bottom:0; padding:8px;"><button type="submit" class="btn-purple" style="padding:8px 15px;">→</button></form></div>`;
         
-        // 4. РЕЙТИНГ (Начисление очков при одобрении)
         if (task.status === 'Выполнено') {
           html += `<form action="/admin/approve-task" method="POST" style="margin-top:10px;"><input type="hidden" name="id" value="${task.id}"><input type="hidden" name="username" value="${task.taken_by}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-ok" style="width:100%;">✅ Одобрить и начислить 10 очков</button></form>`;
         }
@@ -408,32 +460,23 @@ app.get('/admin', async (req, res) => {
       html += `</div>`;
     }
 
-    // СОТРУДНИКИ
+    // СОТРУДНИКИ (С ПОИСКОМ)
     if (tab === 'workers') {
-      const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY role ASC");
-      html += `<div class="admin-col animate-in" style="max-width:800px; margin:0 auto;"><h3>👥 Список сотрудников</h3><p style="text-align:center; color:var(--muted); margin-bottom:20px;">Всего в команде: ${workers.length}</p>`;
+      const { rows: workers } = await pool.query("SELECT * FROM applications WHERE status = 'Одобрено' AND is_deleted = false AND name ILIKE $1 ORDER BY role ASC", [`%${search}%`]);
+      html += `<div class="admin-col animate-in" style="max-width:800px; margin:0 auto;"><h3>👥 Список сотрудников</h3><p style="text-align:center; color:var(--muted); margin-bottom:20px;">Найдено: ${workers.length}</p>`;
+      
+      html += `<form action="/admin" method="GET" style="margin-bottom:20px; display:flex; gap:10px;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="tab" value="workers"><input name="search" placeholder="Поиск по имени..." value="${search}" style="margin-bottom:0;"><button type="submit" class="btn-purple" style="width:auto; padding:0 20px;">Найти</button></form>`;
       
       if (workers.length === 0) html += `<p style="text-align:center; color:var(--muted);">Пока никого нет</p>`;
       else {
         workers.forEach((w, i) => {
-          html += `<div class="worker-row animate-in delay-${Math.min(i+1, 3)}">
-            <div>
-              <p style="margin:0; font-size:15px;"><b>${w.name}</b> <span style="color:var(--accent); font-size:13px;">(${w.role})</span> — 🏆 ${w.points} очков</p>
-              <p style="margin:5px 0 0 0; font-size:12px; color:var(--muted);">Логин: ${w.username} | Discord: ${w.discord}</p>
-              <p style="margin:2px 0 0 0; font-size:12px; color:var(--muted);">Roblox: ${w.roblox_nick} | TG: ${w.telegram || '-'}</p>
-            </div>
-            <form action="/admin/kick-worker" method="POST" onsubmit="return confirm('Отправить сотрудника ${w.name} в корзину?');">
-              <input type="hidden" name="id" value="${w.id}">
-              <input type="hidden" name="pass" value="${pass}">
-              <button type="submit" class="btn-del">🗑️ В корзину</button>
-            </form>
-          </div>`;
+          html += `<div class="worker-row animate-in delay-${Math.min(i+1, 3)}"><div><p style="margin:0; font-size:15px;"><b>${w.name}</b> <span style="color:var(--accent); font-size:13px;">(${w.role})</span> — 🏆 ${w.points} очков</p><p style="margin:5px 0 0 0; font-size:12px; color:var(--muted);">Логин: ${w.username} | Discord: ${w.discord}</p><p style="margin:2px 0 0 0; font-size:12px; color:var(--muted);">Roblox: ${w.roblox_nick} | TG: ${w.telegram || '-'}</p></div><form action="/admin/kick-worker" method="POST" onsubmit="return confirm('Отправить сотрудника ${w.name} в корзину?');"><input type="hidden" name="id" value="${w.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-del">🗑️ В корзину</button></form></div>`;
         });
       }
       html += `</div>`;
     }
 
-    // 8. КОРЗИНА
+    // КОРЗИНА
     if (tab === 'trash') {
       const { rows: delApps } = await pool.query('SELECT * FROM applications WHERE is_deleted = true ORDER BY created_at DESC');
       const { rows: delTasks } = await pool.query('SELECT * FROM tasks WHERE status = \'Удалено\' ORDER BY created_at DESC');
@@ -443,7 +486,6 @@ app.get('/admin', async (req, res) => {
       delApps.forEach(app => {
         html += `<div class="card" style="opacity:0.6;"><p style="font-size:15px; margin:5px 0;"><b>${app.name}</b> (${app.role})</p><p style="font-size:12px; color:var(--muted);">Логин: ${app.username}</p><form action="/admin/restore-app" method="POST" style="margin-top:10px;"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-purple" style="width:100%; padding:8px;">Восстановить</button></form></div>`;
       });
-      
       html += `</div><div class="admin-col"><h3>🗑️ Удаленные задачи</h3>`;
       if (delTasks.length === 0) html += `<p style="text-align:center; color:var(--muted);">Пусто</p>`;
       delTasks.forEach(task => {
@@ -457,12 +499,26 @@ app.get('/admin', async (req, res) => {
   } catch (err) { res.send(`<h2 style="color:var(--danger);">Ошибка: ${err.message}</h2>`); }
 });
 
-// ДЕЙСТВИЯ АДМИНА
 app.post('/admin/status', async (req, res) => {
   const { id, status, pass, comment } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
   await pool.query('UPDATE applications SET status = $1, admin_comment = $2 WHERE id = $3', [status, comment || null, id]);
   res.redirect('/admin?pass=' + pass + '&tab=applications'); 
+});
+
+// Создание объявления
+app.post('/admin/announcement', async (req, res) => {
+  const { title, content, pass } = req.body;
+  if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
+  await pool.query('INSERT INTO announcements (title, content) VALUES ($1, $2)', [title, content]);
+  res.redirect('/admin?pass=' + pass + '&tab=announcements'); 
+});
+
+app.post('/admin/delete-announcement', async (req, res) => {
+  const { id, pass } = req.body;
+  if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
+  await pool.query('DELETE FROM announcements WHERE id = $1', [id]);
+  res.redirect('/admin?pass=' + pass + '&tab=announcements'); 
 });
 
 app.post('/admin/task', async (req, res) => {
@@ -472,7 +528,6 @@ app.post('/admin/task', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=tasks'); 
 });
 
-// Добавление комментария к задаче
 app.post('/admin/comment', async (req, res) => {
   const { id, text, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -482,7 +537,6 @@ app.post('/admin/comment', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=tasks');
 });
 
-// Одобрение задачи и начисление очков (Рейтинг)
 app.post('/admin/approve-task', async (req, res) => {
   const { id, username, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -491,7 +545,6 @@ app.post('/admin/approve-task', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=tasks');
 });
 
-// В корзину
 app.post('/admin/delete-app', async (req, res) => {
   const { id, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -513,7 +566,6 @@ app.post('/admin/kick-worker', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=workers');
 });
 
-// Восстановление из корзины
 app.post('/admin/restore-app', async (req, res) => {
   const { id, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
