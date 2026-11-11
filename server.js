@@ -9,7 +9,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Увеличиваем лимит для загрузки фото (Base64)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -30,19 +29,10 @@ const css = `
 
   /* --- ОСНОВНОЙ САЙТ --- */
   * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-  body { 
-    margin: 0; background: #030305; color: #fff; display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden;
-    background-image: radial-gradient(circle at 15% 50%, rgba(108,92,231,0.08) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(0,184,148,0.08) 0%, transparent 50%);
-  }
-
+  body { margin: 0; background: #030305; color: #fff; display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 100vh; position: relative; overflow-x: hidden; background-image: radial-gradient(circle at 15% 50%, rgba(108,92,231,0.08) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(0,184,148,0.08) 0%, transparent 50%); }
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
   
-  .glass { 
-    background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(30px) saturate(200%); -webkit-backdrop-filter: blur(30px) saturate(200%); 
-    border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1); 
-    border-radius: 28px; 
-  }
-
+  .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(30px) saturate(200%); -webkit-backdrop-filter: blur(30px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1); border-radius: 28px; }
   .container { padding: 40px; width: 100%; max-width: 520px; margin: 40px auto; position: relative; z-index: 1; }
   .wide-container { max-width: 1100px; width: 100%; }
   h1, h2, h3 { text-align: center; color: #fff; margin-bottom: 25px; font-weight: 800; letter-spacing: -0.5px; }
@@ -82,7 +72,6 @@ const css = `
 
   .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 900px; }
   @media (max-width: 768px) { .main-menu { grid-template-columns: 1fr; } }
-  
   .menu-panel { padding: 50px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; text-decoration: none; color: #fff; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); cursor: pointer; min-height: 350px; }
   .menu-panel:hover { transform: translateY(-8px) scale(1.02); background: rgba(255, 255, 255, 0.05); }
   .menu-panel h2 { font-size: 28px; margin-bottom: 10px; }
@@ -147,22 +136,64 @@ const scripts = `
   </script>
 `;
 
+// --- ФУНКЦИЯ ДЛЯ ОТРИСОВКИ КАБИНЕТА (чтобы не дублировать код) ---
+const renderDashboard = async (user, res) => {
+  const { rows: tasks } = await pool.query(`
+    SELECT * FROM tasks 
+    WHERE role = $1 AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours')
+    ORDER BY created_at DESC
+  `, [user.role]);
+  
+  let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass"><h2>Кабинет: ${user.name} (${user.role})</h2><div class="link" style="text-align:right; margin-bottom:20px;"><a href="/">Выйти</a></div><div class="grid">`;
+  
+  if (tasks.length === 0) html += `<p style="text-align:center; color:#888; grid-column: 1/-1;">Для вашего отдела пока нет активных задач.</p>`;
+  else {
+    tasks.forEach(task => {
+      let badgeClass = 'pending', badgeText = 'Свободна';
+      let actionHtml = '';
+
+      if (task.status === 'Свободна') {
+        actionHtml = `<form action="/task/take" method="POST"><input type="hidden" name="task_id" value="${task.id}"><input type="hidden" name="username" value="${user.username}"><input type="hidden" name="password" value="${user.password}"><button type="submit" class="btn-purple" style="width:100%;">Взять задачу</button></form>`;
+      } else if (task.status === 'В работе') {
+        if (task.taken_by === user.username) {
+          badgeClass = 'taken'; badgeText = 'В работе (у вас)';
+          actionHtml = `
+            <form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:15px;">
+              <input type="hidden" name="task_id" value="${task.id}">
+              <input type="hidden" name="username" value="${user.username}">
+              <input type="hidden" name="password" value="${user.password}">
+              <p style="font-size:13px; color:#ccc; margin-bottom:10px;">Прикрепите скриншот/доказательство:</p>
+              <input type="file" name="proof" accept="image/*" required style="padding:10px; font-size:13px; margin-bottom:10px; background:rgba(0,0,0,0.3); border:1px dashed rgba(255,255,255,0.2);">
+              <button type="submit" class="btn-ok" style="width:100%;">Я выполнил задачу</button>
+            </form>`;
+        } else {
+          badgeClass = 'taken'; badgeText = 'В работе';
+          actionHtml = `<p style="color:#a29bfe; font-size:14px; font-weight:600; text-align:center; padding:10px; background:rgba(108,92,231,0.1); border-radius:10px;">Взял(а): ${task.taken_by}</p>`;
+        }
+      } else if (task.status === 'Выполнено') {
+        badgeClass = 'approved'; badgeText = 'Выполнено (Ожидает проверки)';
+        actionHtml = `<p style="color:#00b894; font-size:14px; font-weight:600; text-align:center; padding:10px; background:rgba(0,184,148,0.1); border-radius:10px;">Сдал(а): ${task.taken_by}</p>`;
+      }
+
+      html += `<div class="card ${badgeClass}">
+        <span class="badge ${badgeClass}">${badgeText}</span>
+        <h3 style="margin-top:0; text-align:left;">${task.title}</h3>
+        <p style="color:#ccc; font-size:14px; margin-bottom:15px;">${task.description}</p>
+        ${actionHtml}
+      </div>`;
+    });
+  }
+  html += `</div></div></body></html>`;
+  res.send(html);
+};
+
 // --- ГЛАВНАЯ ---
 app.get('/', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
   <div class="main-menu">
-    <a href="/login" class="menu-panel glass">
-      <h2>Сотрудникам</h2>
-      <p>Вход в личный кабинет<br>для получения и сдачи задач</p>
-      <div class="menu-btn-style">Войти</div>
-    </a>
-    <a href="/apply" class="menu-panel glass">
-      <h2>Соискателям</h2>
-      <p>Подать заявку в команду<br>на одну из должностей</p>
-      <div class="menu-btn-style">Подать заявку</div>
-    </a>
-  </div>
-  </body></html>`);
+    <a href="/login" class="menu-panel glass"><h2>Сотрудникам</h2><p>Вход в личный кабинет<br>для получения и сдачи задач</p><div class="menu-btn-style">Войти</div></a>
+    <a href="/apply" class="menu-panel glass"><h2>Соискателям</h2><p>Подать заявку в команду<br>на одну из должностей</p><div class="menu-btn-style">Подать заявку</div></a>
+  </div></body></html>`);
 });
 
 // --- ЗАЯВКА ---
@@ -186,7 +217,6 @@ app.get('/login', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Вход</title><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Вход для сотрудников</h2><form action="/dashboard" method="POST"><input name="username" placeholder="Ваш логин" required><input name="password" type="password" placeholder="Ваш пароль" required><button type="submit">Войти в кабинет</button></form><div class="link"><a href="/">← На главную</a></div></div></body></html>`);
 });
 
-// --- КАБИНЕТ СОТРУДНИКА ---
 app.post('/dashboard', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -196,61 +226,18 @@ app.post('/dashboard', async (req, res) => {
     const user = rows[0];
     if (user.status !== 'Одобрено') return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass"><h2>Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена или была отклонена.</div><div class="link"><a href="/">На главную</a></div></div></body></html>`);
 
-    // Берем задачи для отдела, исключая те, что выполнены более 24 часов назад
-    const { rows: tasks } = await pool.query(`
-      SELECT * FROM tasks 
-      WHERE role = $1 AND (completed_at IS NULL OR completed_at > NOW() - INTERVAL '24 hours')
-      ORDER BY created_at DESC
-    `, [user.role]);
-    
-    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass"><h2>Кабинет: ${user.name} (${user.role})</h2><div class="link" style="text-align:right; margin-bottom:20px;"><a href="/">Выйти</a></div><div class="grid">`;
-    
-    if (tasks.length === 0) html += `<p style="text-align:center; color:#888; grid-column: 1/-1;">Для вашего отдела пока нет активных задач.</p>`;
-    else {
-      tasks.forEach(task => {
-        let badgeClass = 'pending', badgeText = 'Свободна';
-        let actionHtml = '';
-
-        if (task.status === 'Свободна') {
-          actionHtml = `<form action="/task/take" method="POST"><input type="hidden" name="task_id" value="${task.id}"><input type="hidden" name="username" value="${user.username}"><button type="submit" class="btn-purple" style="width:100%;">Взять задачу</button></form>`;
-        } else if (task.status === 'В работе') {
-          if (task.taken_by === user.username) {
-            badgeClass = 'taken'; badgeText = 'В работе (у вас)';
-            actionHtml = `
-              <form action="/task/done" method="POST" enctype="multipart/form-data" style="margin-top:15px;">
-                <input type="hidden" name="task_id" value="${task.id}">
-                <input type="hidden" name="username" value="${user.username}">
-                <p style="font-size:13px; color:#ccc; margin-bottom:10px;">Прикрепите скриншот/доказательство:</p>
-                <input type="file" name="proof" accept="image/*" required style="padding:10px; font-size:13px; margin-bottom:10px; background:rgba(0,0,0,0.3); border:1px dashed rgba(255,255,255,0.2);">
-                <button type="submit" class="btn-ok" style="width:100%;">Я выполнил задачу</button>
-              </form>`;
-          } else {
-            badgeClass = 'taken'; badgeText = 'В работе';
-            actionHtml = `<p style="color:#a29bfe; font-size:14px; font-weight:600; text-align:center; padding:10px; background:rgba(108,92,231,0.1); border-radius:10px;">Взял(а): ${task.taken_by}</p>`;
-          }
-        } else if (task.status === 'Выполнено') {
-          badgeClass = 'approved'; badgeText = 'Выполнено (Ожидает проверки)';
-          actionHtml = `<p style="color:#00b894; font-size:14px; font-weight:600; text-align:center; padding:10px; background:rgba(0,184,148,0.1); border-radius:10px;">Сдал(а): ${task.taken_by}</p>`;
-        }
-
-        html += `<div class="card ${badgeClass}">
-          <span class="badge ${badgeClass}">${badgeText}</span>
-          <h3 style="margin-top:0; text-align:left;">${task.title}</h3>
-          <p style="color:#ccc; font-size:14px; margin-bottom:15px;">${task.description}</p>
-          ${actionHtml}
-        </div>`;
-      });
-    }
-    html += `</div></div></body></html>`;
-    res.send(html);
+    await renderDashboard(user, res);
   } catch (err) { res.status(500).send('Ошибка сервера'); }
 });
 
 // Обработка кнопки "Взять задачу"
 app.post('/task/take', async (req, res) => {
-  const { task_id, username } = req.body;
+  const { task_id, username, password } = req.body;
   await pool.query("UPDATE tasks SET status = 'В работе', taken_by = $1 WHERE id = $2", [username, task_id]);
-  res.redirect('back');
+  
+  // Сразу перерисовываем кабинет
+  const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
+  await renderDashboard(rows[0], res);
 });
 
 // Обработка сдачи задачи с фото
@@ -258,19 +245,18 @@ app.post('/task/done', (req, res) => {
   let chunks = [];
   req.on('data', chunk => chunks.push(chunk));
   req.on('end', async () => {
-    // Простейший парсер multipart для одного файла
     const buffer = Buffer.concat(chunks);
     const boundary = req.headers['content-type'].split('boundary=')[1];
     const parts = buffer.toString('binary').split('--' + boundary);
     
-    let task_id, username, proofBase64 = '';
+    let task_id, username, password, proofBase64 = '';
     for (let part of parts) {
       if (part.includes('name="task_id"')) task_id = part.split('\r\n\r\n')[1].split('\r\n')[0];
       if (part.includes('name="username"')) username = part.split('\r\n\r\n')[1].split('\r\n')[0];
+      if (part.includes('name="password"')) password = part.split('\r\n\r\n')[1].split('\r\n')[0];
       if (part.includes('name="proof"')) {
         const matches = part.match(/Content-Type: (image\/.*)\r\n\r\n([\s\S]*)\r\n$/);
         if (matches) {
-          // Сохраняем как Base64 для простоты (в идеале нужно хранилище, но для мелких картинок сработает)
           const base64 = Buffer.from(matches[2], 'binary').toString('base64');
           proofBase64 = `data:${matches[1]};base64,${base64}`;
         }
@@ -279,28 +265,26 @@ app.post('/task/done', (req, res) => {
     
     if (task_id && username) {
       await pool.query("UPDATE tasks SET status = 'Выполнено', completed_at = NOW(), proof_image = $1 WHERE id = $2 AND taken_by = $3", [proofBase64, task_id, username]);
+      // Сразу перерисовываем кабинет
+      const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
+      await renderDashboard(rows[0], res);
+    } else {
+      res.redirect('/login');
     }
-    res.redirect('back');
   });
 });
 
 // --- АДМИНКА ---
 app.get('/admin', async (req, res) => {
   const pass = req.query.pass;
-  const tab = req.query.tab || 'tasks'; // tasks или applications
+  const tab = req.query.tab || 'tasks';
 
   if (pass !== ADMIN_PASSWORD) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container glass" style="max-width:380px; margin-top:120px;"><h2>Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></body></html>`);
   
   try {
-    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass">
-    <h2>Админ-панель</h2>
-    <div class="tabs">
-      <a href="/admin?pass=${pass}&tab=tasks" class="tab-btn ${tab === 'tasks' ? 'active' : ''}">Задачи</a>
-      <a href="/admin?pass=${pass}&tab=applications" class="tab-btn ${tab === 'applications' ? 'active' : ''}">Заявки</a>
-    </div>`;
+    let html = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="container wide-container glass"><h2>Админ-панель</h2><div class="tabs"><a href="/admin?pass=${pass}&tab=tasks" class="tab-btn ${tab === 'tasks' ? 'active' : ''}">Задачи</a><a href="/admin?pass=${pass}&tab=applications" class="tab-btn ${tab === 'applications' ? 'active' : ''}">Заявки</a></div>`;
 
     if (tab === 'applications') {
-      // Заявки (левая колонка - текущие, правая - архив)
       const { rows: apps } = await pool.query('SELECT * FROM applications ORDER BY created_at DESC');
       const current = apps.filter(a => a.status === 'На рассмотрении');
       const archive = apps.filter(a => a.status !== 'На рассмотрении');
@@ -309,21 +293,18 @@ app.get('/admin', async (req, res) => {
         let badge = 'pending', text = 'На рассмотрении';
         if (app.status === 'Одобрено') { badge = 'approved'; text = 'Одобрено'; }
         if (app.status === 'Отклонено') { badge = 'rejected'; text = 'Отклонено'; }
-        let html = `<div class="card ${badge}"><span class="badge ${badge}">${text}</span><p style="font-size:15px; margin-bottom:8px;"><b>${app.name}</b> (${app.role})</p><p style="font-size:12px; color:rgba(255,255,255,0.6);">Логин: ${app.username}<br>Discord: ${app.discord}</p>`;
+        let h = `<div class="card ${badge}"><span class="badge ${badge}">${text}</span><p style="font-size:15px; margin-bottom:8px;"><b>${app.name}</b> (${app.role})</p><p style="font-size:12px; color:rgba(255,255,255,0.6);">Логин: ${app.username}<br>Discord: ${app.discord}</p>`;
         if (app.status === 'На рассмотрении') {
-          html += `<form action="/admin/status" method="POST" style="display:flex; gap:8px; margin-top:15px;" onsubmit="const msg = prompt('Комментарий:'); if (msg !== null) { this.comment.value = msg; } else { event.preventDefault(); }"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="comment" value=""><button name="status" value="Одобрено" class="btn-ok">Одобрить</button><button name="status" value="Отклонено" class="btn-bad">Отклонить</button></form>`;
+          h += `<form action="/admin/status" method="POST" style="display:flex; gap:8px; margin-top:15px;" onsubmit="const msg = prompt('Комментарий:'); if (msg !== null) { this.comment.value = msg; } else { event.preventDefault(); }"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="comment" value=""><button name="status" value="Одобрено" class="btn-ok">Одобрить</button><button name="status" value="Отклонено" class="btn-bad">Отклонить</button></form>`;
         }
-        return html + `</div>`;
+        return h + `</div>`;
       };
 
-      html += `<div class="admin-grid">
-        <div class="admin-col"><h3>⏳ Текущие заявки</h3>`;
+      html += `<div class="admin-grid"><div class="admin-col"><h3>⏳ Текущие заявки</h3>`;
       if (current.length === 0) html += `<p style="text-align:center; color:#666;">Пусто</p>`;
       current.forEach(a => html += renderApp(a));
       
-      html += `</div><div class="admin-col"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3 style="margin:0;">📁 Архив заявок</h3>
-        <form action="/admin/clear-archive" method="POST" onsubmit="return confirm('ВЫ УВЕРЕНЫ? Это удалит ВСЕ обработанные заявки навсегда!');"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-bad" style="padding:8px 12px; font-size:12px;">Очистить</button></form>
-      </div>`;
+      html += `</div><div class="admin-col"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3 style="margin:0;">📁 Архив заявок</h3><form action="/admin/clear-archive" method="POST" onsubmit="return confirm('ВЫ УВЕРЕНЫ? Это удалит ВСЕ обработанные заявки навсегда!');"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="btn-bad" style="padding:8px 12px; font-size:12px;">Очистить</button></form></div>`;
       if (archive.length === 0) html += `<p style="text-align:center; color:#666;">Пусто</p>`;
       archive.forEach(a => html += renderApp(a));
       html += `</div></div>`;
@@ -331,18 +312,7 @@ app.get('/admin', async (req, res) => {
 
     if (tab === 'tasks') {
       const { rows: tasks } = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
-      
-      html += `
-      <div class="card" style="margin-bottom:30px; border-left-color:#6c5ce7;">
-        <h3>➕ Выдать новую задачу</h3>
-        <form action="/admin/task" method="POST" style="margin-top:15px;">
-          <input type="hidden" name="pass" value="${pass}">
-          <select name="role" required><option value="" disabled selected hidden>Выберите отдел</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select>
-          <input name="title" placeholder="Название задачи" required>
-          <textarea name="description" placeholder="Описание задачи" rows="2" required></textarea>
-          <button type="submit" style="background:#6c5ce7; color:#fff;">Создать задачу</button>
-        </form>
-      </div><div class="grid">`;
+      html += `<div class="card" style="margin-bottom:30px; border-left-color:#6c5ce7;"><h3>➕ Выдать новую задачу</h3><form action="/admin/task" method="POST" style="margin-top:15px;"><input type="hidden" name="pass" value="${pass}"><select name="role" required><option value="" disabled selected hidden>Выберите отдел</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="title" placeholder="Название задачи" required><textarea name="description" placeholder="Описание задачи" rows="2" required></textarea><button type="submit" style="background:#6c5ce7; color:#fff;">Создать задачу</button></form></div><div class="grid">`;
       
       tasks.forEach(task => {
         let badge = 'pending', text = 'Свободна';
@@ -364,7 +334,6 @@ app.get('/admin', async (req, res) => {
   } catch (err) { res.send(`<h2 style="color:red;">Ошибка: ${err.message}</h2>`); }
 });
 
-// Обновление статуса заявки
 app.post('/admin/status', async (req, res) => {
   const { id, status, pass, comment } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -372,7 +341,6 @@ app.post('/admin/status', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=applications'); 
 });
 
-// Создание задачи
 app.post('/admin/task', async (req, res) => {
   const { role, title, description, pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
@@ -380,7 +348,6 @@ app.post('/admin/task', async (req, res) => {
   res.redirect('/admin?pass=' + pass + '&tab=tasks'); 
 });
 
-// Очистка архива (с защитой)
 app.post('/admin/clear-archive', async (req, res) => {
   const { pass } = req.body;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('Нет доступа');
