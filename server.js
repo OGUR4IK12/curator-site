@@ -2,7 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 10000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '526721'; // Твой пин-код администратора
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '526721'; // Пин-код админа
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -142,7 +142,7 @@ const renderDashboard = async (user, res, message = '') => {
     ${message ? `<div class="alert" style="background:rgba(34,197,94,0.1); color:var(--success); border-color:rgba(34,197,94,0.2);">${message}</div>` : ''}
     <div class="card animate-in" style="text-align:center; padding:40px;">
       <h3>Добро пожаловать в команду разработки «Выжить в Антарктиде»!</h3>
-      <p style="color:var(--text-sec);">Твоя заявка одобрена. Скоро здесь появятся задачи для твоего отдела.</p>
+      <p style="color:var(--text-sec);">Твоя заявка одобрена.</p>
     </div>
   </div></div></body></html>`;
   res.send(html);
@@ -153,14 +153,32 @@ app.get('/', (req, res) => {
 });
 
 app.get('/apply', (req, res) => { 
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="margin-bottom:24px;">Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="Ваше Имя" required><input name="location" placeholder="Страна / Город" required><input name="roblox" placeholder="Ник в Roblox" required><input name="discord" placeholder="Ник в Discord" required><select name="role" required><option value="" disabled selected hidden>Выберите роль...</option><option>Скриптер</option><option>Билдер</option><option>3D-Модельер</option><option>Тестер</option><option>GUI-дизайнер</option><option>Аниматор</option></select><textarea name="about" placeholder="О себе и опыт работы..." rows="3" required></textarea><input name="username" placeholder="Придумайте логин" required><input name="password" type="password" placeholder="Придумайте пароль" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="margin-bottom:24px;">Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST">
+    <input name="name" placeholder="Ваше Имя" required>
+    <input name="location" placeholder="Страна / Город" required>
+    <input name="roblox" placeholder="Ник в Roblox" required>
+    <input name="discord" placeholder="Ник в Discord" required>
+    <input name="tiktok" placeholder="Ник в TikTok (необязательно)">
+    <select name="role" required>
+      <option value="" disabled selected hidden>Выберите роль...</option>
+      <option>Скриптер</option>
+      <option>3D-Модельер (делает модели в Blender)</option>
+      <option>Билдер (строит в Roblox Studio)</option>
+      <option>Тестер (тестирует в Roblox Studio)</option>
+      <option>GUI-дизайнер</option>
+      <option>Аниматор</option>
+    </select>
+    <input name="username" placeholder="Придумайте логин" required>
+    <input name="password" type="password" placeholder="Придумайте пароль" required>
+    <button type="submit">Отправить заявку</button>
+  </form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
 });
 
 app.post('/apply', async (req, res) => { 
-  const { name, location, roblox, discord, role, about, username, password } = req.body; 
+  const { name, location, roblox, discord, tiktok, role, username, password } = req.body; 
   if (!name || !location || !roblox || !discord || !role || !username || !password) return res.redirect('/apply?error=1'); 
   try { 
-    await pool.query(`INSERT INTO applications (name, location, roblox_nick, discord, role, about, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`, [name, location, roblox, discord, role, about || '', username.trim(), password.trim()]); 
+    await pool.query(`INSERT INTO applications (name, location, roblox_nick, discord, tiktok, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`, [name, location, roblox, discord, tiktok || 'Не указан', role, username.trim(), password.trim()]); 
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--success);">Успешно!</h2><p style="color:var(--text-sec); text-align:center; margin-bottom:24px;">Ваша анкета отправлена разработчику.</p><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
   } catch (err) { 
     res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--danger);">Ошибка</h2><div class="alert">Этот логин уже занят другим пользователем.</div><div class="link"><a href="/apply">← Назад</a></div></div></div></body></html>`); 
@@ -170,22 +188,16 @@ app.post('/apply', async (req, res) => {
 app.get('/login', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Вход</title><style>${css}</style></head><body>${scripts}
   <script>
-    // Автоматический вход, если данные уже сохранены в браузере
     const savedUser = localStorage.getItem('saved_username');
     const savedPass = localStorage.getItem('saved_password');
     if (savedUser && savedPass) {
       document.write('<div style="text-align:center; color:var(--text); padding:50px;"><h2>Автоматический вход...</h2></div>');
       const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/dashboard';
-      const uInput = document.createElement('input');
-      uInput.type = 'hidden'; uInput.name = 'username'; uInput.value = savedUser;
-      const pInput = document.createElement('input');
-      pInput.type = 'hidden'; pInput.name = 'password'; pInput.value = savedPass;
-      form.appendChild(uInput);
-      form.appendChild(pInput);
-      document.body.appendChild(form);
-      form.submit();
+      form.method = 'POST'; form.action = '/dashboard';
+      const uInput = document.createElement('input'); uInput.type = 'hidden'; uInput.name = 'username'; uInput.value = savedUser;
+      const pInput = document.createElement('input'); pInput.type = 'hidden'; pInput.name = 'password'; pInput.value = savedPass;
+      form.appendChild(uInput); form.appendChild(pInput);
+      document.body.appendChild(form); form.submit();
     }
   </script>
   <div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Вход для сотрудников</h2><form action="/dashboard" method="POST" onsubmit="saveCredentials()"><input id="u_name" name="username" placeholder="Логин" required><input id="u_pass" name="password" type="password" placeholder="Пароль" required><button type="submit">Войти в кабинет</button></form><div class="link"><a href="/">← На главную</a></div></div></div>
@@ -203,7 +215,7 @@ app.post('/dashboard', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2', [username, password]);
     if (rows.length === 0) {
-      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль. Либо данные устарели.<br><br><a href="/" onclick="localStorage.clear();" style="color:var(--accent);">Сбросить авто-вход и на главную</a></div><div class="link"><a href="/login">← Назад</a></div></div></div></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2>Ошибка</h2><div class="alert">Неверный логин или пароль.<br><br><a href="/" onclick="localStorage.clear();" style="color:var(--accent);">Сбросить авто-вход и на главную</a></div><div class="link"><a href="/login">← Назад</a></div></div></div></body></html>`);
     }
     const user = rows[0];
     if (user.status !== 'Одобрено') {
@@ -256,7 +268,7 @@ app.get('/admin', async (req, res) => {
       if (app.status === 'Одобрено') bClass = 'approved';
       if (app.status === 'Отклонено') bClass = 'rejected';
       
-      html += `<div class="card animate-in"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="badge ${bClass}">${app.status}</span><span style="font-size:13px; color:var(--text-sec);">${app.role}</span></div><h3 style="text-align:left; margin:8px 0;">${app.name} (${app.age || 'возраст не указан'} лет)</h3><p style="margin:4px 0; color:var(--text-sec); font-size:14px;">📍 ${app.location} | Roblox: <b>${app.roblox_nick}</b> | Discord: <b>${app.discord}</b></p><p style="margin:8px 0 16px; font-size:14px; background:rgba(0,0,0,0.2); padding:10px; border-radius:12px;">💬 ${app.about || 'Без описания'}</p><div style="display:flex; gap:8px;"><form action="/admin/status" method="POST" style="flex:1;"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="status" value="Одобрено"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="background:var(--success); padding:10px;">Принять ✅</button></form><form action="/admin/status" method="POST" style="flex:1;"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="status" value="Отклонено"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="background:var(--danger); padding:10px;">Отклонить ❌</button></form></div></div>`;
+      html += `<div class="card animate-in"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="badge ${bClass}">${app.status}</span><span style="font-size:13px; color:var(--text-sec);">${app.role}</span></div><h3 style="text-align:left; margin:8px 0;">${app.name}</h3><p style="margin:4px 0; color:var(--text-sec); font-size:14px;">📍 ${app.location} | Roblox: <b>${app.roblox_nick}</b> | Discord: <b>${app.discord}</b> | TikTok: <b>${app.tiktok || 'Не указан'}</b></p><div style="display:flex; gap:8px; margin-top:16px;"><form action="/admin/status" method="POST" style="flex:1;"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="status" value="Одобрено"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="background:var(--success); padding:10px;">Принять ✅</button></form><form action="/admin/status" method="POST" style="flex:1;"><input type="hidden" name="id" value="${app.id}"><input type="hidden" name="status" value="Отклонено"><input type="hidden" name="pass" value="${pass}"><button type="submit" style="background:var(--danger); padding:10px;">Отклонить ❌</button></form></div></div>`;
     });
 
     html += `</div></div></body></html>`;
