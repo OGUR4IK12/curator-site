@@ -6,8 +6,9 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "connect-pg-simple": "^9.0.1",
     "express": "^4.19.2",
-    "pg": "^8.11.3",
-    "express-session": "^1.18.0"
+    "express-session": "^1.18.0",
+    "pg": "^8.11.3"
   }
 }
