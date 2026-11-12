@@ -104,9 +104,6 @@ const scripts = `
   <canvas id="bg-canvas"></canvas>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
-  <!-- Подключаем Anime.js -->
-  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
-
   <script>
     function toggleTheme() {
       const body = document.body;
@@ -122,47 +119,7 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     }, { passive: true });
 
-    // --- АНИМАЦИЯ 3D-МОДЕЛИ ЛЕДОКОЛА "ИГЛА" (Anime.js) ---
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof anime === 'undefined') return;
-
-      anime({
-        targets: '.ship-container',
-        opacity: [0, 1],
-        translateY: [50, 0],
-        scale: [0.8, 1],
-        duration: 1500,
-        easing: 'easeOutExpo'
-      });
-
-      anime({
-        targets: '.ship-container',
-        translateY: [-10, 10],
-        rotateZ: [-2, 2],
-        duration: 4000,
-        direction: 'alternate',
-        loop: true,
-        easing: 'easeInOutSine'
-      });
-
-      anime({
-        targets: '.ship-propeller',
-        rotate: 360,
-        duration: 1000,
-        loop: true,
-        easing: 'linear'
-      });
-
-      anime({
-        targets: '.ship-glow',
-        opacity: [0, 0.8, 0],
-        duration: 3000,
-        loop: true,
-        easing: 'easeInOutQuad'
-      });
-    });
-
-    // --- 3D НАКЛОН КАРТОЧЕК ---
+    // --- 3D НАКЛОН КАРТОЧЕК (Vanilla JS) ---
     document.querySelectorAll('.idea-card').forEach(card => {
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
@@ -179,7 +136,7 @@ const scripts = `
       });
     });
 
-    // --- КУБИКИ НА ФОНЕ ---
+    // --- КУБИКИ НА ФОНЕ (Canvas) ---
     if (!window.location.pathname.startsWith('/admin')) {
       const canvas = document.getElementById('bg-canvas');
       const ctx = canvas.getContext('2d', { alpha: true });
@@ -206,6 +163,41 @@ const scripts = `
       }
       window.addEventListener('resize', resize); resize(); requestAnimationFrame(animateCanvas);
     }
+  </script>
+
+  <!-- Anime.js v4 для анимаций -->
+  <script type="module">
+    import { createTimeline, stagger, createSpring, onScroll } from 'https://esm.sh/animejs@4';
+
+    // 1. Анимация 3D-модели ледокола
+    const shipTl = createTimeline({ loop: true, defaults: { ease: 'inOutSine' } });
+    
+    shipTl
+      .add('.ship-container', { translateY: [-10, 10], rotateZ: [-2, 2], duration: 4000, direction: 'alternate' })
+      .add('.ship-propeller', { rotate: 360, duration: 1000, loop: true, ease: 'linear' }, 0)
+      .add('.ship-glow', { opacity: [0, 0.8, 0], duration: 3000, loop: true }, 0);
+
+    // 2. Анимация карточек при скролле (в секции "Почему мы лучшие")
+    const cardsTl = createTimeline({
+      autoplay: onScroll({
+        target: '.grid-ideas',
+        enter: 'top bottom',
+        leave: 'bottom top',
+        sync: 0.3
+      }),
+      defaults: {
+        duration: 800,
+        ease: createSpring({ stiffness: 100, damping: 15 })
+      }
+    });
+
+    cardsTl.add('.idea-card', {
+      opacity: [0, 1],
+      y: [40, 0],
+      scale: [0.95, 1],
+      rotate: [1, 0],
+      delay: stagger(100)
+    });
   </script>
 `;
 
