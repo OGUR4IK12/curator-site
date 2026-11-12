@@ -48,10 +48,15 @@ const css = `
   h2 { font-size: clamp(28px, 5vw, 48px); margin-bottom: 20px; }
 
   /* ГЛАВНАЯ СТРАНИЦА */
-  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; position: relative; }
   .hero p { color: var(--text-sec); font-size: clamp(16px, 2vw, 22px); max-width: 600px; margin-top: 20px; }
-  .glow-text { background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  [data-theme="light"] .glow-text { background: linear-gradient(90deg, #000, #555); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  
+  /* 3D-МОДЕЛЬ ЛЕДОКОЛА */
+  .ship-container { position: relative; width: 300px; height: 300px; margin: 0 auto 20px; display: flex; justify-content: center; align-items: center; perspective: 1000px; }
+  .ship-svg { width: 100%; height: auto; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6)); transform-style: preserve-3d; }
+  .ship-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150%; height: 150%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: 50%; opacity: 0; pointer-events: none; }
+  
+  @media (max-width: 768px) { .ship-container { width: 200px; height: 200px; } }
 
   .section { padding: 100px 20px; display: flex; flex-direction: column; align-items: center; }
   .grid-ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; width: 100%; max-width: 1100px; margin-top: 40px; }
@@ -67,7 +72,7 @@ const css = `
   .idea-card p { color: var(--text-sec); font-size: 15px; line-height: 1.6; }
   .idea-num { font-size: 14px; font-weight: 700; color: var(--text-sec); opacity: 0.5; }
 
-  /* ФОРМЫ */
+  /* ФОРМЫ И АДМИНКА */
   input, select, textarea, button { width: 100%; padding: 16px; margin-bottom: 16px; border-radius: 12px; font-size: 16px; }
   input, select, textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); outline: none; }
   button { background: var(--accent); color: var(--bg); border: none; font-weight: 600; cursor: pointer; }
@@ -88,7 +93,6 @@ const css = `
   .action-btn:hover { border-color: var(--text); }
   
   @media (max-width: 768px) { 
-    h1 { font-size: 40px; } 
     .section { padding: 60px 20px; } 
     .admin-tabs { flex-direction: column; } 
     .action-btn { width: 100%; } 
@@ -100,10 +104,10 @@ const scripts = `
   <canvas id="bg-canvas"></canvas>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
-  <script>
-    const { animate, stagger, inView } = window.Motion || {};
+  <!-- Подключаем Anime.js -->
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
 
+  <script>
     function toggleTheme() {
       const body = document.body;
       const isLight = body.getAttribute('data-theme') === 'light';
@@ -112,62 +116,50 @@ const scripts = `
     }
     if (localStorage.getItem('theme') === 'light') document.body.setAttribute('data-theme', 'light');
 
-    // --- ФУНКЦИЯ АНИМАЦИИ ТЕКСТА (Аналог Magic UI / Framer Motion) ---
-    function animateText(element, text, animationType = 'blurInUp', by = 'character') {
-      if (!element || !animate) return;
-      
-      let segments = [];
-      if (by === 'character') segments = text.split('');
-      else if (by === 'word') segments = text.split(/(\\s+)/);
-      else segments = [text];
+    const glow = document.getElementById('cursor-glow');
+    window.addEventListener('mousemove', (e) => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    }, { passive: true });
 
-      element.innerHTML = '';
-      element.style.display = 'flex';
-      element.style.flexWrap = 'wrap';
-      element.style.justifyContent = 'center';
+    // --- АНИМАЦИЯ 3D-МОДЕЛИ ЛЕДОКОЛА "ИГЛА" (Anime.js) ---
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof anime === 'undefined') return;
 
-      const spans = segments.map(seg => {
-        const span = document.createElement('span');
-        span.textContent = seg === ' ' ? '\\u00A0' : seg;
-        span.style.display = 'inline-block';
-        span.style.willChange = 'transform, opacity, filter';
-        element.appendChild(span);
-        return span;
+      anime({
+        targets: '.ship-container',
+        opacity: [0, 1],
+        translateY: [50, 0],
+        scale: [0.8, 1],
+        duration: 1500,
+        easing: 'easeOutExpo'
       });
 
-      if (animationType === 'blurInUp') {
-        animate(spans, 
-          { opacity: [0, 1], y: [20, 0], filter: ['blur(10px)', 'blur(0px)'] },
-          { delay: stagger(0.03), duration: 0.6, ease: [0.16, 1, 0.3, 1] }
-        );
-      } else if (animationType === 'slideUp') {
-        animate(spans, 
-          { opacity: [0, 1], y: [30, 0] },
-          { delay: stagger(0.05), duration: 0.5, ease: 'easeOut' }
-        );
-      } else {
-        animate(spans, { opacity: [0, 1] }, { delay: stagger(0.03), duration: 0.4 });
-      }
-    }
+      anime({
+        targets: '.ship-container',
+        translateY: [-10, 10],
+        rotateZ: [-2, 2],
+        duration: 4000,
+        direction: 'alternate',
+        loop: true,
+        easing: 'easeInOutSine'
+      });
 
-    // --- ЗАПУСК АНИМАЦИЙ ---
-    document.addEventListener('DOMContentLoaded', () => {
-      const heroTitle = document.querySelector('.hero h1');
-      if (heroTitle) {
-        const text = heroTitle.textContent.trim();
-        animateText(heroTitle, text, 'blurInUp', 'character');
-      }
+      anime({
+        targets: '.ship-propeller',
+        rotate: 360,
+        duration: 1000,
+        loop: true,
+        easing: 'linear'
+      });
 
-      if (inView) {
-        document.querySelectorAll('.section').forEach(section => {
-          inView(section, (info) => {
-            animate(info.target.querySelectorAll('.idea-card, .menu-panel'), 
-              { opacity: [0, 1], y: [30, 0] }, 
-              { delay: stagger(0.1), duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-            );
-          }, { margin: '-100px' });
-        });
-      }
+      anime({
+        targets: '.ship-glow',
+        opacity: [0, 0.8, 0],
+        duration: 3000,
+        loop: true,
+        easing: 'easeInOutQuad'
+      });
     });
 
     // --- 3D НАКЛОН КАРТОЧЕК ---
@@ -257,14 +249,27 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// --- ГЛАВНАЯ СТРАНИЦА (ДИЗАЙН С ИДЕЯМИ И АНИМАЦИЯМИ) ---
+// --- ГЛАВНАЯ СТРАНИЦА С 3D-МОДЕЛЬЮ ---
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ИГЛА | Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
   
   <div class="hero">
-    <h1 class="glow-text">ИГЛА</h1>
-    <p>Секретный режим выживания в Антарктиде. Мы создаем лучшее в индустрии. Наши конкуренты слизали наши идеи, но мы идем дальше.</p>
+    <div class="ship-container">
+      <div class="ship-glow"></div>
+      <svg class="ship-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 120 L160 120 L180 140 L20 140 Z" fill="var(--text)" opacity="0.9"/>
+        <path d="M50 120 L60 80 L140 80 L150 120 Z" fill="var(--text)" opacity="0.8"/>
+        <rect x="80" y="60" width="40" height="20" rx="4" fill="var(--text)" opacity="0.9"/>
+        <rect x="90" y="40" width="20" height="20" rx="2" fill="var(--text)" opacity="0.7"/>
+        <path d="M100 40 L100 20" stroke="var(--text)" stroke-width="2"/>
+        <circle class="ship-propeller" cx="100" cy="20" r="8" stroke="var(--text)" stroke-width="2" fill="none"/>
+        <line class="ship-propeller" x1="92" y1="20" x2="108" y2="20" stroke="var(--text)" stroke-width="2"/>
+        <circle cx="70" cy="100" r="3" fill="var(--bg)"/>
+        <circle cx="130" cy="100" r="3" fill="var(--bg)"/>
+      </svg>
+    </div>
+    <p style="color:var(--text-sec); font-size: clamp(16px, 2vw, 22px); max-width: 600px; margin-top: 20px;">Секретный режим выживания в Антарктиде. Мы создаем лучшее в индустрии.</p>
     <div class="main-menu" style="margin-top: 40px; max-width: 500px;">
       <a href="/apply" class="menu-panel"><h3>Присоединиться</h3><p>Подать заявку в команду</p></a>
       <a href="/login" class="menu-panel"><h3>Сотрудникам</h3><p>Вход в личный кабинет</p></a>
@@ -274,7 +279,7 @@ app.get('/', (req, res) => {
 
   <div class="section">
     <h2>Почему мы лучшие?</h2>
-    <p style="color:var(--text-sec); text-align:center; max-width:600px;">Потому что мы не стоим на месте. Мы взяли все баги, все ошибки и превратили их в идеальный опыт выживания.</p>
+    <p style="color:var(--text-sec); text-align:center; max-width:600px;">Мы не стоим на месте. Мы взяли все баги, все ошибки и превратили их в идеальный опыт выживания.</p>
     <div class="grid-ideas">
       <div class="glass idea-card">
         <div class="idea-num">01</div>
@@ -288,8 +293,8 @@ app.get('/', (req, res) => {
       </div>
       <div class="glass idea-card">
         <div class="idea-num">03</div>
-        <h3>Идеи, которые воруют</h3>
-        <p>Да, наши идеи слизали. Это значит, что мы задаем тренд. Мы продолжим быть на шаг впереди.</p>
+        <h3>Мы задаем тренд</h3>
+        <p>Наши идеи копируют. Это значит, что мы на шаг впереди. Мы продолжим создавать будущее.</p>
       </div>
     </div>
   </div>
