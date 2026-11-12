@@ -94,18 +94,6 @@ const css = `
     letter-spacing: -0.04em;
   }
 
-  h1 {
-    font-size: 48px;
-    line-height: 1;
-    text-transform: uppercase;
-    text-align: center;
-    margin-bottom: 40px;
-  }
-
-  @media (min-width: 768px) {
-    h1 { font-size: 80px; margin-bottom: 60px; }
-  }
-
   h2 {
     font-size: 28px;
     margin-bottom: 20px;
@@ -116,15 +104,9 @@ const css = `
     h2 { font-size: 48px; }
   }
 
-  .glow-text {
-    background: linear-gradient(90deg, #fff, #888);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
   /* ГЛАВНАЯ СТРАНИЦА */
   .hero {
-    min-height: 60vh;
+    min-height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -306,7 +288,6 @@ const css = `
   }
 
   @media (min-width: 768px) {
-    /* Теперь 2 колонки вместо 3, так как "Проект ИГЛА" убран */
     .footer-content { grid-template-columns: repeat(2, 1fr); }
   }
 
@@ -462,7 +443,7 @@ const scripts = `
   </script>
 `;
 
-// --- ХЕЛПЕР ДЛЯ ПОДВАЛА (БЕЗ ПРОЕКТА ИГЛА) ---
+// --- ХЕЛПЕР ДЛЯ ПОДВАЛА ---
 const footerHtml = `
   <footer class="site-footer">
     <div class="footer-content">
@@ -526,14 +507,13 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// --- ГЛАВНАЯ СТРАНИЦА (БЕЗ ЛЕДОКОЛА) ---
+// --- ГЛАВНАЯ СТРАНИЦА (БЕЗ НАДПИСИ ИГЛА СВЕРХУ) ---
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ИГЛА | Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
   
   <div class="content-wrapper">
     <div class="hero">
-      <h1 class="glow-text">ИГЛА</h1>
       <div class="main-menu">
         <a href="/apply" class="menu-panel"><h3>Присоединиться</h3><p>Подать заявку в команду</p></a>
         <a href="/login" class="menu-panel"><h3>Сотрудникам</h3><p>Вход в личный кабинет</p></a>
