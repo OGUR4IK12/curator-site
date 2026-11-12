@@ -22,7 +22,6 @@ app.use(session({
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 
-// --- СТИЛИ (Mobile-First) ---
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
   
@@ -473,37 +472,49 @@ const scripts = `
 
   <!-- Anime.js v4 для анимаций -->
   <script type="module">
-    import { createTimeline, stagger, createSpring, onScroll } from 'https://esm.sh/animejs@4';
+    import { animate, stagger } from 'https://esm.sh/animejs@4';
 
-    // 1. Анимация 3D-модели ледокола
-    const shipTl = createTimeline({ loop: true, defaults: { ease: 'inOutSine' } });
-    
-    shipTl
-      .add('.ship-container', { translateY: [-10, 10], rotateZ: [-2, 2], duration: 4000, direction: 'alternate' })
-      .add('.ship-propeller', { rotate: 360, duration: 1000, loop: true, ease: 'linear' }, 0)
-      .add('.ship-glow', { opacity: [0, 0.8, 0], duration: 3000, loop: true }, 0);
+    // Анимация 3D-модели ледокола
+    animate('.ship-container', {
+      translateY: [-10, 10],
+      rotateZ: [-2, 2],
+      duration: 4000,
+      direction: 'alternate',
+      loop: true,
+      ease: 'inOutSine'
+    });
 
-    // 2. Анимация карточек при скролле
-    const cardsTl = createTimeline({
-      autoplay: onScroll({
-        target: '.grid-ideas',
-        enter: 'top bottom',
-        leave: 'bottom top',
-        sync: 0.3
-      }),
-      defaults: {
-        duration: 800,
-        ease: createSpring({ stiffness: 100, damping: 15 })
+    animate('.ship-propeller', {
+      rotate: 360,
+      duration: 1000,
+      loop: true,
+      ease: 'linear'
+    });
+
+    animate('.ship-glow', {
+      opacity: [0, 0.8, 0],
+      duration: 3000,
+      loop: true,
+      ease: 'inOutQuad'
+    });
+
+    // Надежная анимация карточек при скролле (через IntersectionObserver)
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        animate('.idea-card', {
+          opacity: [0, 1],
+          y: [40, 0],
+          scale: [0.95, 1],
+          delay: stagger(100),
+          duration: 800,
+          ease: 'out(3)'
+        });
+        observer.disconnect(); // Отключаем после первого появления
       }
-    });
+    }, { threshold: 0.1 });
 
-    cardsTl.add('.idea-card', {
-      opacity: [0, 1],
-      y: [40, 0],
-      scale: [0.95, 1],
-      rotate: [1, 0],
-      delay: stagger(100)
-    });
+    const section = document.querySelector('.section');
+    if (section) observer.observe(section);
   </script>
 `;
 
@@ -574,7 +585,7 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// --- ГЛАВНАЯ СТРАНИЦА (БЕЗ ТЕКСТА ПОД КОРАБЛЕМ) ---
+// --- ГЛАВНАЯ СТРАНИЦА (ПОЛНОСТЬЮ ОЧИЩЕНА ОТ ОШИБОК) ---
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ИГЛА | Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
@@ -596,7 +607,6 @@ app.get('/', (req, res) => {
           <circle cx="130" cy="100" r="3" fill="var(--bg)"/>
         </svg>
       </div>
-      <!-- Текст удален -->
       <div class="main-menu">
         <a href="/apply" class="menu-panel"><h3>Присоединиться</h3><p>Подать заявку в команду</p></a>
         <a href="/login" class="menu-panel"><h3>Сотрудникам</h3><p>Вход в личный кабинет</p></a>
@@ -604,6 +614,7 @@ app.get('/', (req, res) => {
       </div>
     </div>
 
+    <!-- НОВАЯ СЕКЦИЯ ВНИЗУ (ТРИ КАРТОЧКИ) -->
     <div class="section">
       <h2>Почему мы лучшие?</h2>
       <p style="color:var(--text-sec); text-align:center; max-width:600px;">Мы не стоим на месте. Мы взяли все баги, все ошибки и превратили их в идеальный опыт выживания.</p>
