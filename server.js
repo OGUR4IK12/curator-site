@@ -22,6 +22,7 @@ app.use(session({
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 
+// --- СТИЛИ (Mobile-First) ---
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
   
@@ -98,11 +99,11 @@ const css = `
     line-height: 1;
     text-transform: uppercase;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
   }
 
   @media (min-width: 768px) {
-    h1 { font-size: 80px; }
+    h1 { font-size: 80px; margin-bottom: 60px; }
   }
 
   h2 {
@@ -123,7 +124,7 @@ const css = `
 
   /* ГЛАВНАЯ СТРАНИЦА */
   .hero {
-    min-height: 80vh;
+    min-height: 60vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -131,42 +132,6 @@ const css = `
     text-align: center;
     padding: 20px;
     position: relative;
-  }
-  
-  /* 3D-МОДЕЛЬ ЛЕДОКОЛА */
-  .ship-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    perspective: 1000px;
-  }
-
-  @media (min-width: 768px) {
-    .ship-container { width: 300px; height: 300px; }
-  }
-
-  .ship-svg {
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
-    transform-style: preserve-3d;
-  }
-
-  .ship-glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 150%;
-    height: 150%;
-    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    opacity: 0;
-    pointer-events: none;
   }
 
   .section {
@@ -198,6 +163,8 @@ const css = `
     transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
     transform-style: preserve-3d;
     will-change: transform;
+    opacity: 0; /* Скрыто до анимации */
+    transform: translateY(40px) scale(0.95);
   }
 
   .idea-card:hover {
@@ -339,7 +306,8 @@ const css = `
   }
 
   @media (min-width: 768px) {
-    .footer-content { grid-template-columns: repeat(3, 1fr); }
+    /* Теперь 2 колонки вместо 3, так как "Проект ИГЛА" убран */
+    .footer-content { grid-template-columns: repeat(2, 1fr); }
   }
 
   .footer-col h4 {
@@ -470,33 +438,9 @@ const scripts = `
     }
   </script>
 
-  <!-- Anime.js v4 для анимаций -->
+  <!-- Anime.js v4 для анимаций карточек -->
   <script type="module">
     import { animate, stagger } from 'https://esm.sh/animejs@4';
-
-    // Анимация 3D-модели ледокола
-    animate('.ship-container', {
-      translateY: [-10, 10],
-      rotateZ: [-2, 2],
-      duration: 4000,
-      direction: 'alternate',
-      loop: true,
-      ease: 'inOutSine'
-    });
-
-    animate('.ship-propeller', {
-      rotate: 360,
-      duration: 1000,
-      loop: true,
-      ease: 'linear'
-    });
-
-    animate('.ship-glow', {
-      opacity: [0, 0.8, 0],
-      duration: 3000,
-      loop: true,
-      ease: 'inOutQuad'
-    });
 
     // Надежная анимация карточек при скролле (через IntersectionObserver)
     const observer = new IntersectionObserver((entries) => {
@@ -518,13 +462,10 @@ const scripts = `
   </script>
 `;
 
-// --- ХЕЛПЕР ДЛЯ ПОДВАЛА (ИЗМЕНЕНО) ---
+// --- ХЕЛПЕР ДЛЯ ПОДВАЛА (БЕЗ ПРОЕКТА ИГЛА) ---
 const footerHtml = `
   <footer class="site-footer">
     <div class="footer-content">
-      <div class="footer-col">
-        <h4>Проект ИГЛА</h4>
-      </div>
       <div class="footer-col">
         <h4>Навигация</h4>
         <ul>
@@ -568,7 +509,7 @@ const renderDashboard = async (user, res, message = '') => {
         else { badgeClass = 'pending'; badgeText = 'В работе'; actionHtml = `<p style="color:var(--text-sec); font-size:13px; margin-top:16px;">Взял: ${task.taken_by}</p>`; }
       } else if (task.status === 'Выполнено') { badgeClass = 'approved'; badgeText = 'На проверке'; }
       
-      html += `<div class="card idea-card" style="border-left: 4px solid var(--text);"><span class="badge ${badgeClass}">${badgeText} · ${task.role}</span><h3 style="margin:0;">${task.title}</h3><p style="color:var(--text-sec); font-size:14px; margin-top:8px;">${task.description}</p>${actionHtml}</div>`;
+      html += `<div class="card idea-card" style="border-left: 4px solid var(--text); opacity: 1; transform: none;"><span class="badge ${badgeClass}">${badgeText} · ${task.role}</span><h3 style="margin:0;">${task.title}</h3><p style="color:var(--text-sec); font-size:14px; margin-top:8px;">${task.description}</p>${actionHtml}</div>`;
     });
   }
   
@@ -585,7 +526,7 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// --- ГЛАВНАЯ СТРАНИЦА (ПОЛНОСТЬЮ ОЧИЩЕНА ОТ ОШИБОК) ---
+// --- ГЛАВНАЯ СТРАНИЦА (БЕЗ ЛЕДОКОЛА) ---
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ИГЛА | Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
@@ -593,20 +534,6 @@ app.get('/', (req, res) => {
   <div class="content-wrapper">
     <div class="hero">
       <h1 class="glow-text">ИГЛА</h1>
-      <div class="ship-container">
-        <div class="ship-glow"></div>
-        <svg class="ship-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M40 120 L160 120 L180 140 L20 140 Z" fill="var(--text)" opacity="0.9"/>
-          <path d="M50 120 L60 80 L140 80 L150 120 Z" fill="var(--text)" opacity="0.8"/>
-          <rect x="80" y="60" width="40" height="20" rx="4" fill="var(--text)" opacity="0.9"/>
-          <rect x="90" y="40" width="20" height="20" rx="2" fill="var(--text)" opacity="0.7"/>
-          <path d="M100 40 L100 20" stroke="var(--text)" stroke-width="2"/>
-          <circle class="ship-propeller" cx="100" cy="20" r="8" stroke="var(--text)" stroke-width="2" fill="none"/>
-          <line class="ship-propeller" x1="92" y1="20" x2="108" y2="20" stroke="var(--text)" stroke-width="2"/>
-          <circle cx="70" cy="100" r="3" fill="var(--bg)"/>
-          <circle cx="130" cy="100" r="3" fill="var(--bg)"/>
-        </svg>
-      </div>
       <div class="main-menu">
         <a href="/apply" class="menu-panel"><h3>Присоединиться</h3><p>Подать заявку в команду</p></a>
         <a href="/login" class="menu-panel"><h3>Сотрудникам</h3><p>Вход в личный кабинет</p></a>
@@ -614,7 +541,6 @@ app.get('/', (req, res) => {
       </div>
     </div>
 
-    <!-- НОВАЯ СЕКЦИЯ ВНИЗУ (ТРИ КАРТОЧКИ) -->
     <div class="section">
       <h2>Почему мы лучшие?</h2>
       <p style="color:var(--text-sec); text-align:center; max-width:600px;">Мы не стоим на месте. Мы взяли все баги, все ошибки и превратили их в идеальный опыт выживания.</p>
