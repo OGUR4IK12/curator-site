@@ -41,7 +41,7 @@ const css = `
     --accent: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --blue: #007aff;
   }
 
-  * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; margin: 0; padding: 0; }
+  * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   
   body { 
     background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center;
@@ -51,28 +51,20 @@ const css = `
     overflow-x: hidden;
   }
 
-  #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); }
+  #cursor-glow { position: fixed; width: 800px; height: 800px; background: radial-gradient(circle, rgba(10, 132, 255, 0.08) 0%, transparent 60%); border-radius: 50%; pointer-events: none; z-index: 0; transform: translate(-50%, -50%); display: none; }
+  @media (min-width: 768px) { #cursor-glow { display: block; } }
   [data-theme="light"] #cursor-glow { background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 60%); }
 
+  /* Мобильная адаптация сообщений (скрываем на телефонах, чтобы не мешали) */
   .chat-side { position: fixed; top: 0; height: 100vh; width: 260px; z-index: 2; pointer-events: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 20px; padding-bottom: 40px; }
   .chat-side.left { left: 0; align-items: flex-start; }
   .chat-side.right { right: 0; align-items: flex-end; }
 
   .tg-bubble { 
-    background: rgba(135, 116, 225, 0.95); 
-    color: #ffffff; 
-    padding: 8px 12px; 
-    border-radius: 14px; 
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    font-size: 13px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: fit-content;
-    max-width: 220px;
-    opacity: 0;
-    animation: floatMsg 8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    background: rgba(135, 116, 225, 0.95); color: #ffffff; padding: 8px 12px; border-radius: 14px; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; font-size: 13px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 4px;
+    width: fit-content; max-width: 220px; opacity: 0;
   }
 
   .chat-side.left .tg-bubble { border-bottom-left-radius: 4px; }
@@ -85,50 +77,46 @@ const css = `
   .tg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 2px; }
   .tg-checks { color: #ffffff; font-weight: bold; letter-spacing: -1px; }
 
-  @keyframes floatMsg {
-    0% { opacity: 0; transform: translateY(20px) scale(0.9); }
-    10% { opacity: 1; transform: translateY(0) scale(1); }
-    85% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-20px) scale(0.9); }
-  }
-
   @media (max-width: 900px) { .chat-side { display: none; } }
 
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
 
-  .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; }
+  .content-wrapper { position: relative; z-index: 10; width: 100%; display: flex; justify-content: center; align-items: center; padding: 16px; }
 
   .glass { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); backdrop-filter: blur(12px); }
   
-  .container { padding: 40px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
+  .container { padding: 24px; width: 100%; max-width: 480px; margin: 20px auto; position: relative; z-index: 10; }
   .wide-container { max-width: 1100px; width: 100%; }
   
   h1, h2, h3 { text-align: center; color: var(--text); margin-bottom: 24px; font-weight: 700; letter-spacing: -0.03em; }
-  h1 { font-size: 32px; } h2 { font-size: 24px; } h3 { font-size: 18px; }
+  h1 { font-size: 28px; } h2 { font-size: 24px; } h3 { font-size: 18px; }
 
-  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-in { animation: slideUp 0.5s ease forwards; opacity: 0; }
-  .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; } .delay-3 { animation-delay: 0.3s; }
+  @media (min-width: 768px) { h1 { font-size: 32px; } .container { padding: 40px; } }
+
+  /* Плавные анимации появления (с помощью CSS, если Motion не загрузится) */
+  .animate-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .animate-in.visible { opacity: 1; transform: translateY(0); }
 
   input, select, textarea { 
-    width: 100%; padding: 14px 16px; margin-bottom: 16px; 
-    background: var(--bg); border: 1px solid var(--border); border-radius: 10px; 
-    font-size: 14px; color: var(--text); outline: none; transition: all 0.2s;
+    width: 100%; padding: 16px; margin-bottom: 16px; 
+    background: var(--bg); border: 1px solid var(--border); border-radius: 12px; 
+    font-size: 16px; /* 16px предотвращает зум на iPhone */
+    color: var(--text); outline: none; transition: all 0.2s;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--text); }
   
-  button { width: 100%; padding: 14px; background: var(--accent); color: var(--bg); border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  button { width: 100%; padding: 16px; background: var(--accent); color: var(--bg); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
   button:hover { opacity: 0.8; }
-  button:active { transform: scale(0.99); }
+  button:active { transform: scale(0.98); }
 
-  .link { text-align: center; margin-top: 24px; font-size: 13px; }
+  .link { text-align: center; margin-top: 24px; font-size: 14px; }
   .link a { color: var(--text-sec); text-decoration: none; transition: color 0.2s; }
   .link a:hover { color: var(--text); }
   
-  .alert { padding: 14px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 13px; background: rgba(255,69,58,0.1); color: var(--danger); border: 1px solid rgba(255,69,58,0.2); }
+  .alert { padding: 14px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 14px; background: rgba(255,69,58,0.1); color: var(--danger); border: 1px solid rgba(255,69,58,0.2); }
   
   .card { 
-    padding: 24px; border-radius: 12px; margin-bottom: 16px; 
+    padding: 20px; border-radius: 12px; margin-bottom: 16px; 
     background: var(--card-bg); border: 1px solid var(--border); 
     transition: border-color 0.2s, transform 0.2s; position: relative; backdrop-filter: blur(10px);
   }
@@ -140,12 +128,12 @@ const css = `
   .badge.rejected { color: var(--danger); border-color: rgba(255,69,58,0.3); }
   .badge.taken { color: var(--blue); border-color: rgba(10,132,255,0.3); }
   
-  .action-bar { display: flex; gap: 8px; margin-top: 20px; }
-  .action-btn { display: flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 13px; font-weight: 500; color: var(--text); }
+  .action-bar { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+  .action-btn { display: flex; align-items: center; justify-content: center; padding: 12px 16px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-decoration: none; font-size: 14px; font-weight: 500; color: var(--text); }
   .action-btn:hover { border-color: var(--text); }
   
   .main-menu { display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
-  .menu-panel { padding: 32px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--text); transition: all 0.2s; cursor: pointer; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); }
+  .menu-panel { padding: 24px; display: flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--text); transition: all 0.2s; cursor: pointer; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); }
   .menu-panel:hover { border-color: var(--text-sec); transform: translateY(-2px); }
   .menu-panel h2 { font-size: 20px; margin-bottom: 8px; text-align: left; }
   .menu-panel p { color: var(--text-sec); font-size: 14px; margin-bottom: 0; }
@@ -155,12 +143,12 @@ const css = `
   .admin-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
   @media (min-width: 900px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
   
-  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); }
+  .worker-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; margin-bottom: 12px; background: var(--card-bg); border: 1px solid var(--border); backdrop-filter: blur(10px); flex-wrap: wrap; gap: 12px; }
   
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
   @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
-  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; backdrop-filter: blur(10px); }
-  .stat-val { font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; text-align: center; backdrop-filter: blur(10px); }
+  .stat-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 8px; }
   .stat-lbl { font-size: 12px; color: var(--text-sec); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
   .comments-box { margin-top: 16px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
@@ -172,7 +160,14 @@ const css = `
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-success { background: var(--success); color: #fff; }
 
-  .theme-toggle { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; font-size: 16px; backdrop-filter: blur(10px); }
+  .theme-toggle { position: fixed; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; font-size: 20px; backdrop-filter: blur(10px); }
+
+  /* Адаптация админки под мобилки */
+  .admin-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; justify-content: center; }
+  @media (max-width: 600px) {
+    .admin-tabs { flex-direction: column; }
+    .admin-tabs .action-btn { width: 100%; padding: 14px; }
+  }
 `;
 
 const scripts = `
@@ -182,7 +177,12 @@ const scripts = `
   <canvas id="bg-canvas"></canvas>
   <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌓</button>
 
+  <!-- Подключаем Motion (Framer Motion) для JS -->
+  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
+
   <script>
+    const { animate, stagger, spring } = window.Motion || {};
+
     function toggleTheme() {
       const body = document.body;
       const isLight = body.getAttribute('data-theme') === 'light';
@@ -197,7 +197,35 @@ const scripts = `
       glow.style.top = e.clientY + 'px';
     }, { passive: true });
 
-    // --- ОПТИМИЗИРОВАННЫЕ КУБИКИ ---
+    // --- АНИМАЦИИ (Framer Motion, если загрузился) ---
+    document.addEventListener('DOMContentLoaded', () => {
+      if (animate) {
+        // Плавное появление карточек
+        const elements = document.querySelectorAll('.menu-panel, .card, .glass.animate-in');
+        if (elements.length > 0) {
+          animate(
+            elements,
+            { opacity: [0, 1], y: [20, 0], scale: [0.95, 1] },
+            { delay: stagger(0.1), duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+          );
+        }
+      } else {
+        // Фоллбек, если Motion не загрузился
+        document.querySelectorAll('.animate-in').forEach(el => el.classList.add('visible'));
+      }
+
+      // Пружинные кнопки
+      if (animate && spring) {
+        document.querySelectorAll('button, .action-btn').forEach(btn => {
+          btn.addEventListener('mouseenter', () => animate(btn, { scale: 1.02 }, { type: spring, stiffness: 400, damping: 20 }));
+          btn.addEventListener('mouseleave', () => animate(btn, { scale: 1 }, { type: spring, stiffness: 400, damping: 20 }));
+          btn.addEventListener('mousedown', () => animate(btn, { scale: 0.96 }, { type: spring, stiffness: 400, damping: 20 }));
+          btn.addEventListener('mouseup', () => animate(btn, { scale: 1.02 }, { type: spring, stiffness: 400, damping: 20 }));
+        });
+      }
+    });
+
+    // --- КУБИКИ (Canvas) ---
     if (!window.location.pathname.startsWith('/admin')) {
       const canvas = document.getElementById('bg-canvas');
       const ctx = canvas.getContext('2d', { alpha: true });
@@ -230,7 +258,7 @@ const scripts = `
 
       const isLightTheme = () => document.body.getAttribute('data-theme') === 'light';
 
-      function animate(time) {
+      function animateCanvas(time) {
         ctx.clearRect(0, 0, width, height);
         
         const fillStyle = isLightTheme() ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)';
@@ -247,7 +275,7 @@ const scripts = `
           let distSq = dx * dx + dy * dy; 
           
           let isHovered = false;
-          if (distSq < 22500) { // 150 * 150
+          if (distSq < 22500) {
             let dist = Math.sqrt(distSq);
             let force = (150 - dist) / 150; 
             targetX -= (dx / dist) * force * 40; 
@@ -276,15 +304,15 @@ const scripts = `
           ctx.stroke();
         });
         
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animateCanvas);
       }
       
       window.addEventListener('resize', resize); 
       resize(); 
-      requestAnimationFrame(animate);
+      requestAnimationFrame(animateCanvas);
     }
 
-    // --- СООБЩЕНИЯ ---
+    // --- СООБЩЕНИЯ С АНИМАЦИЕЙ ---
     if (!window.location.pathname.startsWith('/admin')) {
       const chatLeft = document.getElementById('chat-left');
       const chatRight = document.getElementById('chat-right');
@@ -335,8 +363,20 @@ const scripts = `
           chatRight.appendChild(el);
         }
 
+        if (animate) {
+          animate(el, { opacity: [0, 1], y: [20, 0], scale: [0.9, 1] }, { duration: 0.5, ease: [0.16, 1, 0.3, 1] });
+        } else {
+          el.style.opacity = '1';
+        }
+
         setTimeout(() => {
-          if (el.parentNode) el.remove();
+          if (animate) {
+            animate(el, { opacity: 0, y: -20, scale: 0.9 }, { duration: 0.3, ease: "easeIn" }).finished.then(() => {
+              if (el.parentNode) el.remove();
+            });
+          } else {
+            el.remove();
+          }
         }, 8000);
       }
 
@@ -360,13 +400,13 @@ const renderDashboard = async (user, res, message = '') => {
   const { rows: ann } = await pool.query(`SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1`);
   const announcement = ann.length > 0 ? `<div class="announcement animate-in"><h3>${ann[0].title}</h3><p>${ann[0].content}</p></div>` : '';
 
-  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кабинет</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Кабинет</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap: wrap; gap: 16px;">
       <div>
         <h2 style="text-align:left; margin:0; font-size:24px;">${user.name}</h2>
         <p style="color:var(--text-sec); font-size:14px; margin-top:4px;">${user.role} · Очки: <b style="color:var(--warning);">${user.points}</b></p>
       </div>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:8px; flex-wrap: wrap;">
         <button onclick="document.getElementById('settings-modal').style.display='flex'" class="action-btn">Настройки</button>
         <a href="/logout" class="action-btn">Выйти</a>
       </div>
@@ -391,16 +431,16 @@ const renderDashboard = async (user, res, message = '') => {
       else if (task.role === user.username) taskType = '<span class="badge" style="color:var(--warning); border-color:var(--warning);">Лично</span>';
       else taskType = `<span class="badge">${task.role}</span>`;
 
-      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}"><div style="display:flex; gap:8px;">${taskType}<span class="badge ${badgeClass}">${badgeText}</span></div><h3 style="margin-top:12px; text-align:left; font-size:16px;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:14px; margin-bottom:16px; line-height:1.5;">${task.description}</p>${actionHtml}`;
+      html += `<div class="card ${badgeClass} animate-in delay-${Math.min(i+1, 3)}"><div style="display:flex; gap:8px; flex-wrap: wrap;">${taskType}<span class="badge ${badgeClass}">${badgeText}</span></div><h3 style="margin-top:12px; text-align:left; font-size:16px;">${task.title}</h3>${deadlineHtml}<p style="color:var(--text-sec); font-size:14px; margin-bottom:16px; line-height:1.5;">${task.description}</p>${actionHtml}`;
       if (task.comments) html += `<div class="comments-box"><b>Чат:</b><br><span style="color:var(--text-sec)">${task.comments.replace(/\n/g, '<br>')}</span></div>`;
       html += `</div>`;
     });
   }
   
   html += `</div>
-  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:10000; justify-content:center; align-items:center;">
+  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:10000; justify-content:center; align-items:center; padding: 16px;">
     <div class="glass" style="max-width:400px; width:100%; padding:32px; position:relative;">
-      <button onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:16px; right:16px; background:transparent; border:none; color:var(--text-sec); font-size:20px; cursor:pointer; width:auto;">&times;</button>
+      <button onclick="document.getElementById('settings-modal').style.display='none'" style="position:absolute; top:16px; right:16px; background:transparent; border:none; color:var(--text-sec); font-size:24px; cursor:pointer; width:auto;">&times;</button>
       <h3 style="text-align:center; margin-bottom:24px;">Сменить пароль</h3>
       <form action="/change-password" method="POST">
         <input type="password" name="old_password" placeholder="Старый пароль" required>
@@ -417,29 +457,29 @@ const renderDashboard = async (user, res, message = '') => {
 
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="main-menu"><a href="/login" class="menu-panel animate-in delay-1"><h2>Сотрудникам</h2><p>Вход в кабинет для получения задач</p></a><a href="/apply" class="menu-panel animate-in delay-2"><h2>Соискателям</h2><p>Подать заявку в команду</p></a><a href="/check-status" class="menu-panel animate-in delay-3"><h2>Проверка статуса</h2><p>Узнать, рассмотрели ли вашу заявку</p></a></div></div></body></html>`); 
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Survival in Antarctica</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="main-menu"><a href="/login" class="menu-panel animate-in delay-1"><h2>Сотрудникам</h2><p>Вход в кабинет для получения задач</p></a><a href="/apply" class="menu-panel animate-in delay-2"><h2>Соискателям</h2><p>Подать заявку в команду</p></a><a href="/check-status" class="menu-panel animate-in delay-3"><h2>Проверка статуса</h2><p>Узнать, рассмотрели ли вашу заявку</p></a></div></div></body></html>`); 
 });
 
-app.get('/apply', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="Ваше имя" required><input name="location" placeholder="Страна / Город" required><input name="roblox" placeholder="Ник в Roblox" required><input name="discord" placeholder="Discord" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="" disabled selected hidden>Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Логин для входа" required><input name="password" type="password" placeholder="Пароль для входа" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); });
+app.get('/apply', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Подать заявку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Заявка в команду</h2>${req.query.error ? '<div class="alert">Заполните все обязательные поля!</div>' : ''}<form action="/apply" method="POST"><input name="name" placeholder="Ваше имя" required><input name="location" placeholder="Страна / Город" required><input name="roblox" placeholder="Ник в Roblox" required><input name="discord" placeholder="Discord" required><input name="telegram" placeholder="Telegram (необязательно)"><select name="role" required><option value="" disabled selected hidden>Кем вы хотите быть?</option><option>Билдер</option><option>Скриптер</option><option>GUI-дизайнер</option><option>Аниматор</option><option>Тестер</option></select><input name="username" placeholder="Логин для входа" required><input name="password" type="password" placeholder="Пароль для входа" required><button type="submit">Отправить заявку</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); });
 
-app.post('/apply', async (req, res) => { const { name, location, roblox, discord, telegram, role, username, password } = req.body; if (!name || !location || !roblox || !discord || !role || !username || !password) return res.redirect('/apply?error=1'); try { await pool.query(`INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`, [name, location, roblox, discord, telegram || null, role, username.trim(), password.trim()]); res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--success); text-align:center;">Успешно!</h2><p style="color:var(--text-sec); text-align:center; margin-bottom:24px;">Заявка отправлена. Мы свяжемся с вами после рассмотрения.</p><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); } catch (err) { res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--danger); text-align:center;">Ошибка</h2><div class="alert">Этот логин уже занят.</div><div class="link"><a href="/apply">← Назад</a></div></div></div></body></html>`); } });
+app.post('/apply', async (req, res) => { const { name, location, roblox, discord, telegram, role, username, password } = req.body; if (!name || !location || !roblox || !discord || !role || !username || !password) return res.redirect('/apply?error=1'); try { await pool.query(`INSERT INTO applications (name, location, roblox_nick, discord, telegram, role, username, password, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'На рассмотрении')`, [name, location, roblox, discord, telegram || null, role, username.trim(), password.trim()]); res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--success); text-align:center;">Успешно!</h2><p style="color:var(--text-sec); text-align:center; margin-bottom:24px;">Заявка отправлена. Мы свяжемся с вами после рассмотрения.</p><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); } catch (err) { res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="color:var(--danger); text-align:center;">Ошибка</h2><div class="alert">Этот логин уже занят.</div><div class="link"><a href="/apply">← Назад</a></div></div></div></body></html>`); } });
 
-app.get('/check-status', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Статус заявки</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Статус заявки</h2><form action="/check-status" method="POST"><input name="username" placeholder="Логин" required><input name="password" type="password" placeholder="Пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); });
+app.get('/check-status', (req, res) => { res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Статус заявки</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Статус заявки</h2><form action="/check-status" method="POST"><input name="username" placeholder="Логин" required><input name="password" type="password" placeholder="Пароль" required><button type="submit">Проверить</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); });
 
-app.post('/check-status', async (req, res) => { const username = (req.body.username || '').trim(); const password = (req.body.password || '').trim(); try { const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2 AND is_deleted = false', [username, password]); if (rows.length === 0) { return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } const data = rows[0]; let statusText = 'На рассмотрении', cardClass = 'pending', extraText = ''; if (data.status === 'Одобрено') { statusText = 'Одобрено. Добро пожаловать в команду.'; cardClass = 'approved'; } if (data.status === 'Отклонено') { statusText = 'Отклонено.'; cardClass = 'rejected'; } if (data.admin_comment) { extraText = `<div class="comments-box" style="color:var(--danger); margin-top:16px;"><b>Комментарий куратора:</b><br>${data.admin_comment}</div>`; } res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ваша заявка</h2><div class="card ${cardClass}" style="margin-top:24px;"><span class="badge ${cardClass}">${statusText}</span><p style="margin:12px 0 8px;"><b>Имя:</b> ${data.name}</p><p style="margin:0 0 16px;"><b>Роль:</b> ${data.role}</p>${extraText}</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } catch (err) { res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">${err.message}</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } });
+app.post('/check-status', async (req, res) => { const username = (req.body.username || '').trim(); const password = (req.body.password || '').trim(); try { const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2 AND is_deleted = false', [username, password]); if (rows.length === 0) { return res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } const data = rows[0]; let statusText = 'На рассмотрении', cardClass = 'pending', extraText = ''; if (data.status === 'Одобрено') { statusText = 'Одобрено. Добро пожаловать в команду.'; cardClass = 'approved'; } if (data.status === 'Отклонено') { statusText = 'Отклонено.'; cardClass = 'rejected'; } if (data.admin_comment) { extraText = `<div class="comments-box" style="color:var(--danger); margin-top:16px;"><b>Комментарий куратора:</b><br>${data.admin_comment}</div>`; } res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ваша заявка</h2><div class="card ${cardClass}" style="margin-top:24px;"><span class="badge ${cardClass}">${statusText}</span><p style="margin:12px 0 8px;"><b>Имя:</b> ${data.name}</p><p style="margin:0 0 16px;"><b>Роль:</b> ${data.role}</p>${extraText}</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } catch (err) { res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">${err.message}</div><div class="link"><a href="/check-status">← Назад</a></div></div></div></body></html>`); } });
 
 app.get('/login', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
-  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Вход</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Вход для сотрудников</h2><form action="/login" method="POST"><input name="username" placeholder="Логин" required><input name="password" type="password" placeholder="Пароль" required><button type="submit">Войти в кабинет</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
+  res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Вход</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center; margin-bottom:24px;">Вход для сотрудников</h2><form action="/login" method="POST"><input name="username" placeholder="Логин" required><input name="password" type="password" placeholder="Пароль" required><button type="submit">Войти в кабинет</button></form><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
 });
 
 app.post('/login', async (req, res) => { 
   const { username, password } = req.body; 
   try { 
     const { rows } = await pool.query('SELECT * FROM applications WHERE username = $1 AND password = $2 AND is_deleted = false', [username.trim(), password.trim()]); 
-    if (rows.length === 0) return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/login">← Назад</a></div></div></div></body></html>`); 
+    if (rows.length === 0) return res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Ошибка</h2><div class="alert">Неверный логин или пароль.</div><div class="link"><a href="/login">← Назад</a></div></div></div></body></html>`); 
     const user = rows[0]; 
-    if (user.status !== 'Одобрено') return res.send(`<!DOCTYPE html><html><head><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена.</div><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
+    if (user.status !== 'Одобрено') return res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in"><h2 style="text-align:center;">Доступ закрыт</h2><div class="alert">Ваша заявка еще не одобрена.</div><div class="link"><a href="/">← На главную</a></div></div></div></body></html>`); 
     
     req.session.user = user;
     res.redirect('/dashboard');
@@ -510,7 +550,7 @@ app.get('/admin', async (req, res) => {
   const pass = req.query.pass; 
   const tab = req.query.tab || 'dash'; 
   if (pass !== ADMIN_PASSWORD) {
-    return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Вход в админку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in" style="max-width:380px; margin-top:120px;"><h2 style="text-align:center;">Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></div></body></html>`);
+    return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Вход в админку</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container glass animate-in" style="max-width:380px; margin-top:120px;"><h2 style="text-align:center;">Вход для админа</h2><form><input name="pass" type="password" placeholder="Пароль" required><button type="submit">Войти</button></form></div></div></body></html>`);
   }
   
   try { 
@@ -519,10 +559,10 @@ app.get('/admin', async (req, res) => {
     
     const { rows: allWorkers } = await pool.query("SELECT username, name FROM applications WHERE status = 'Одобрено' AND is_deleted = false ORDER BY name ASC");
     
-    let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Админ-панель</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+    let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Админ-панель</title><style>${css}</style></head><body>${scripts}<div class="content-wrapper"><div class="container wide-container animate-in">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-direction: column; align-items: flex-start; gap: 16px;">
       <h2 style="text-align:left; margin:0; font-size:24px;">Админ-панель</h2>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <div class="admin-tabs">
         <a href="/admin?pass=${pass}&tab=dash" class="action-btn ${tab === 'dash' ? 'active' : ''}" style="${tab === 'dash' ? 'background:var(--text); color:var(--bg);' : ''}">Обзор</a>
         <a href="/admin?pass=${pass}&tab=announcements" class="action-btn ${tab === 'announcements' ? 'active' : ''}" style="${tab === 'announcements' ? 'background:var(--text); color:var(--bg);' : ''}">Объявления</a>
         <a href="/admin?pass=${pass}&tab=tasks" class="action-btn ${tab === 'tasks' ? 'active' : ''}" style="${tab === 'tasks' ? 'background:var(--text); color:var(--bg);' : ''}">Задачи</a>
@@ -547,7 +587,7 @@ app.get('/admin', async (req, res) => {
       html += `<div class="card animate-in"><h3 style="text-align:left; font-size:16px;">Новое объявление</h3><form action="/admin/announcement" method="POST" style="margin-top:16px;"><input type="hidden" name="pass" value="${pass}"><input name="title" placeholder="Заголовок" required><textarea name="content" placeholder="Текст..." rows="3" required></textarea><button type="submit" style="width:100%;">Опубликовать</button></form></div>`;
       const { rows: anns } = await pool.query('SELECT * FROM announcements ORDER BY created_at DESC');
       html += `<div class="grid">`;
-      anns.forEach(ann => { html += `<div class="card"><div style="display:flex; justify-content:space-between; align-items:start;"><div><h3 style="margin-top:0; text-align:left; font-size:16px;">${ann.title}</h3><p style="font-size:14px; color:var(--text-sec);">${ann.content}</p></div><form action="/admin/delete-announcement" method="POST" onsubmit="return confirm('Удалить?');"><input type="hidden" name="id" value="${ann.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="action-btn" style="color:var(--danger); border-color:var(--border);">Удалить</button></form></div></div>`; });
+      anns.forEach(ann => { html += `<div class="card"><div style="display:flex; justify-content:space-between; align-items:start; flex-wrap: wrap; gap: 8px;"><div><h3 style="margin-top:0; text-align:left; font-size:16px;">${ann.title}</h3><p style="font-size:14px; color:var(--text-sec);">${ann.content}</p></div><form action="/admin/delete-announcement" method="POST" onsubmit="return confirm('Удалить?');"><input type="hidden" name="id" value="${ann.id}"><input type="hidden" name="pass" value="${pass}"><button type="submit" class="action-btn" style="color:var(--danger); border-color:var(--border);">Удалить</button></form></div></div>`; });
       html += `</div>`;
     }
 
@@ -593,7 +633,7 @@ app.get('/admin', async (req, res) => {
         }
 
         html += `<div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap: wrap; gap: 8px;">
             <div>
               <span class="badge ${t.status === 'Выполнено' ? 'approved' : 'pending'}">${t.status}</span>
               <span class="badge">${targetLabel}</span>
@@ -609,7 +649,7 @@ app.get('/admin', async (req, res) => {
           <p style="font-size:14px; margin-top:8px;"><b>Исполнитель:</b> ${t.taken_by || 'Никто'}</p>
           ${proofBlock}`;
         if (t.status === 'Выполнено') {
-          html += `<div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-success">Принять</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-danger">На доработку</button></form></div>`;
+          html += `<div style="display:flex; gap:10px; margin-top:16px; flex-wrap: wrap;"><form action="/admin/task/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-success">Принять</button></form><form action="/admin/task/reject" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="task_id" value="${t.id}"><button type="submit" class="btn-danger">На доработку</button></form></div>`;
         }
         html += `</div>`;
       });
@@ -620,7 +660,7 @@ app.get('/admin', async (req, res) => {
       html += `<h3 style="text-align:left; font-size:16px;">Новые заявки</h3>`;
       if (apps.length === 0) html += `<p style="color:var(--text-sec);">Нет новых заявок.</p>`;
       apps.forEach(a => {
-        html += `<div class="card"><h3 style="text-align:left; margin-top:0; font-size:16px;">${a.name} (${a.role})</h3><p style="font-size:14px; margin-top:8px;"><b>Roblox:</b> ${a.roblox_nick} | <b>Discord:</b> ${a.discord}</p><p style="font-size:14px;"><b>Логин:</b> ${a.username}</p><div style="display:flex; gap:10px; margin-top:16px;"><form action="/admin/app/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><button type="submit" class="btn-success">Одобрить</button></form><form action="/admin/app/reject" method="POST" style="flex:1; display:flex; gap:8px;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><input name="comment" placeholder="Причина" required style="margin:0; padding:10px;"><button type="submit" class="btn-danger" style="width:auto;">Отклонить</button></form></div></div>`;
+        html += `<div class="card"><h3 style="text-align:left; margin-top:0; font-size:16px;">${a.name} (${a.role})</h3><p style="font-size:14px; margin-top:8px;"><b>Roblox:</b> ${a.roblox_nick} | <b>Discord:</b> ${a.discord}</p><p style="font-size:14px;"><b>Логин:</b> ${a.username}</p><div style="display:flex; gap:10px; margin-top:16px; flex-wrap: wrap;"><form action="/admin/app/approve" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><button type="submit" class="btn-success">Одобрить</button></form><form action="/admin/app/reject" method="POST" style="flex:1; display:flex; gap:8px; flex-wrap: wrap;"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${a.id}"><input name="comment" placeholder="Причина" required style="margin:0; padding:10px; flex: 1;"><button type="submit" class="btn-danger" style="width:auto;">Отклонить</button></form></div></div>`;
       });
     }
 
@@ -631,7 +671,7 @@ app.get('/admin', async (req, res) => {
       
       workers.forEach(w => {
         html += `<div class="worker-row" style="align-items: flex-start;">
-          <div>
+          <div style="flex: 1;">
             <p style="margin:0; font-size:16px; font-weight:600;"><b>${w.name}</b> (${w.role})</p>
             <p style="margin:8px 0 0 0; font-size:13px; color:var(--text-sec); line-height:1.6;">
               <b>Город:</b> ${w.location} <br>
@@ -641,7 +681,7 @@ app.get('/admin', async (req, res) => {
               <b>Логин:</b> ${w.username} | <b>Очки:</b> ${w.points}
             </p>
           </div>
-          <form action="/admin/worker/fire" method="POST" style="margin-top: 4px;">
+          <form action="/admin/worker/fire" method="POST" style="margin-top: 4px; width: auto;">
             <input type="hidden" name="pass" value="${pass}">
             <input type="hidden" name="id" value="${w.id}">
             <button type="submit" class="btn-danger" style="padding:8px 12px; font-size:12px; width:auto;">Уволить</button>
@@ -655,7 +695,7 @@ app.get('/admin', async (req, res) => {
       html += `<h3 style="text-align:left; font-size:16px;">Корзина</h3>`;
       if (trash.length === 0) html += `<p style="color:var(--text-sec);">Корзина пуста.</p>`;
       trash.forEach(tr => {
-        html += `<div class="worker-row"><div><p style="margin:0; font-size:15px; font-weight:600;"><b>${tr.name}</b> (${tr.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:12px;">Статус: ${tr.status}</p></div><div style="display:flex; gap:10px;"><form action="/admin/worker/restore" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-success" style="padding:8px 12px; font-size:12px; width:auto;">Восстановить</button></form><form action="/admin/worker/delete-forever" method="POST" onsubmit="return confirm('УДАЛИТЬ НАВСЕГДА?');"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-danger" style="padding:8px 12px; font-size:12px; width:auto;">Удалить</button></form></div></div>`;
+        html += `<div class="worker-row"><div style="flex: 1;"><p style="margin:0; font-size:15px; font-weight:600;"><b>${tr.name}</b> (${tr.role})</p><p style="margin:4px 0 0; color:var(--text-sec); font-size:12px;">Статус: ${tr.status}</p></div><div style="display:flex; gap:10px; flex-wrap: wrap;"><form action="/admin/worker/restore" method="POST"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-success" style="padding:8px 12px; font-size:12px; width:auto;">Восстановить</button></form><form action="/admin/worker/delete-forever" method="POST" onsubmit="return confirm('УДАЛИТЬ НАВСЕГДА?');"><input type="hidden" name="pass" value="${pass}"><input type="hidden" name="id" value="${tr.id}"><button type="submit" class="btn-danger" style="padding:8px 12px; font-size:12px; width:auto;">Удалить</button></form></div></div>`;
       });
     }
 
