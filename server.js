@@ -133,18 +133,6 @@ const css = `
     padding: 20px;
     position: relative;
   }
-
-  .hero p {
-    color: var(--text-sec);
-    font-size: 16px;
-    max-width: 600px;
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  @media (min-width: 768px) {
-    .hero p { font-size: 22px; }
-  }
   
   /* 3D-МОДЕЛЬ ЛЕДОКОЛА */
   .ship-container {
@@ -386,16 +374,6 @@ const css = `
   .footer-col ul li a:hover {
     color: var(--text);
   }
-
-  .footer-bottom {
-    max-width: 1100px;
-    margin: 40px auto 0;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    color: var(--text-sec);
-    font-size: 12px;
-  }
 `;
 
 const scripts = `
@@ -529,13 +507,12 @@ const scripts = `
   </script>
 `;
 
-// --- ХЕЛПЕР ДЛЯ ПОДВАЛА ---
+// --- ХЕЛПЕР ДЛЯ ПОДВАЛА (ИЗМЕНЕНО) ---
 const footerHtml = `
   <footer class="site-footer">
     <div class="footer-content">
       <div class="footer-col">
         <h4>Проект ИГЛА</h4>
-        <p>Секретный режим выживания в Антарктиде. Мы создаем лучшее в индустрии и не стоим на месте.</p>
       </div>
       <div class="footer-col">
         <h4>Навигация</h4>
@@ -549,14 +526,9 @@ const footerHtml = `
       <div class="footer-col">
         <h4>Контакты</h4>
         <ul>
-          <li><a href="#">Telegram</a></li>
           <li><a href="#">Discord</a></li>
-          <li><a href="#">Roblox Group</a></li>
         </ul>
       </div>
-    </div>
-    <div class="footer-bottom">
-      &copy; ${new Date().getFullYear()} ИГЛА. Все права защищены.
     </div>
   </footer>
 `;
@@ -602,7 +574,7 @@ const renderDashboard = async (user, res, message = '') => {
   res.send(html);
 };
 
-// --- ГЛАВНАЯ СТРАНИЦА (С ВОЗВРАЩЕННЫМ ЗАГОЛОВКОМ "ИГЛА") ---
+// --- ГЛАВНАЯ СТРАНИЦА (БЕЗ ТЕКСТА ПОД КОРАБЛЕМ) ---
 app.get('/', (req, res) => { 
   if (req.session.user) return res.redirect('/dashboard');
   res.send(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ИГЛА | Survival in Antarctica</title><style>${css}</style></head><body>${scripts}
@@ -624,7 +596,7 @@ app.get('/', (req, res) => {
           <circle cx="130" cy="100" r="3" fill="var(--bg)"/>
         </svg>
       </div>
-      <p>Секретный режим выживания в Антарктиде. Мы создаем лучшее в индустрии.</p>
+      <!-- Текст удален -->
       <div class="main-menu">
         <a href="/apply" class="menu-panel"><h3>Присоединиться</h3><p>Подать заявку в команду</p></a>
         <a href="/login" class="menu-panel"><h3>Сотрудникам</h3><p>Вход в личный кабинет</p></a>
